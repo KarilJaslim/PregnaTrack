@@ -40,7 +40,7 @@ if ($isLoggedIn) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= APP_NAME ?> â€” Pregnancy Care Companion</title>
+    <title><?= APP_NAME ?> &ndash; Pregnancy Care Companion</title>
     <!-- Apply saved theme BEFORE paint to avoid flash -->
     <script>(function(){var s=localStorage.getItem('pregnatrack_theme');var p=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;if(s?s==='dark':p)document.documentElement.setAttribute('data-theme','dark');})()</script>
     <link rel="stylesheet" href="assets/css/style.css">
@@ -119,10 +119,9 @@ if ($isLoggedIn) {
                             <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
                             History
                         </a>
-                        <a href="#" class="dropdown-item" role="menuitem">
+                        <a href="settings.php" class="dropdown-item" role="menuitem">
                             <i class="fas fa-gear" aria-hidden="true"></i>
                             Settings
-                            <span class="dropdown-badge">Soon</span>
                         </a>
                         <div class="dropdown-divider"></div>
                         <button class="dropdown-item dropdown-theme-row" id="dropdownThemeToggle"
@@ -161,28 +160,28 @@ if ($isLoggedIn) {
                 <strong>1st</strong>, <strong>2nd</strong>, and <strong>3rd trimesters</strong>
                 by providing reliable information about both the benefits and possible risks during
                 each stage of pregnancy. It helps mothers understand what is normal, what to expect,
-                and what warning signs to watch out for â€” empowering them to make informed decisions
+                and what warning signs to watch out for &mdash; empowering them to make informed decisions
                 about their health and their baby.
             </p>
 
             <div class="trimester-row" role="list" aria-label="Pregnancy trimesters">
                 <div class="trimester-badge t1" role="listitem">
                     <span class="trimester-num">1st</span>
-                    <span class="trimester-lbl">Trimester<br><small>Weeks 1â€“13</small></span>
+                    <span class="trimester-lbl">Trimester<br><small>Weeks 1&ndash;13</small></span>
                 </div>
                 <div class="trimester-sep" aria-hidden="true">
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="trimester-badge t2" role="listitem">
                     <span class="trimester-num">2nd</span>
-                    <span class="trimester-lbl">Trimester<br><small>Weeks 14â€“26</small></span>
+                    <span class="trimester-lbl">Trimester<br><small>Weeks 14&ndash;26</small></span>
                 </div>
                 <div class="trimester-sep" aria-hidden="true">
                     <i class="fas fa-arrow-right"></i>
                 </div>
                 <div class="trimester-badge t3" role="listitem">
                     <span class="trimester-num">3rd</span>
-                    <span class="trimester-lbl">Trimester<br><small>Weeks 27â€“40</small></span>
+                    <span class="trimester-lbl">Trimester<br><small>Weeks 27&ndash;40</small></span>
                 </div>
             </div>
 
@@ -195,7 +194,7 @@ if ($isLoggedIn) {
             <?php else: ?>
                 <a href="login.php" class="hero-cta-btn">
                     <i class="fas fa-user-plus" aria-hidden="true"></i>
-                    Get Started â€” It's Free
+                    Get Started &mdash; It's Free
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 </a>
             <?php endif; ?>

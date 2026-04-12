@@ -136,10 +136,9 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                         <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
                         History
                     </a>
-                    <a href="#" class="dropdown-item" role="menuitem">
+                    <a href="settings.php" class="dropdown-item" role="menuitem">
                         <i class="fas fa-gear" aria-hidden="true"></i>
                         Settings
-                        <span class="dropdown-badge">Soon</span>
                     </a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item dropdown-theme-row" id="dropdownThemeToggle"

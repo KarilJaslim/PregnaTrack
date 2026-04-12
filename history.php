@@ -117,9 +117,9 @@ foreach ($profileHistory as $snap) $entries[] = buildEntry($snap, false);
                     <a href="history.php" class="dropdown-item dropdown-item-active" role="menuitem">
                         <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>History
                     </a>
-                    <a href="#" class="dropdown-item" role="menuitem">
-                        <i class="fas fa-gear" aria-hidden="true"></i>Settings
-                        <span class="dropdown-badge">Soon</span>
+                    <a href="settings.php" class="dropdown-item" role="menuitem">
+                        <i class="fas fa-gear" aria-hidden="true"></i>
+                        Settings
                     </a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item dropdown-theme-row" id="dropdownThemeToggle" role="menuitem" type="button">
