@@ -1,0 +1,10 @@
+# Environment secrets — never commit
+.env
+
+# User data — flat file DB, keep local only
+storage/users.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log

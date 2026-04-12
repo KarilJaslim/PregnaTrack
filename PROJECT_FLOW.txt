@@ -1,0 +1,317 @@
+============================================================
+  PREGNATRACK — PROJECT FLOW & HOW IT IS BUILT
+  Generated: April 12, 2026
+============================================================
+
+
+------------------------------------------------------------
+  1. WHAT IT IS
+------------------------------------------------------------
+PregnaTrack is a PHP web application for maternal health
+tracking. It lets pregnant users log their physical profile
+(height, weight, age), run a self-assessment questionnaire,
+and download medical reports. It runs on a local XAMPP server
+with no database — all data is stored in a single JSON file.
+
+
+------------------------------------------------------------
+  2. TECH STACK
+------------------------------------------------------------
+  - Language    : PHP 8.x (no framework)
+  - Frontend    : Vanilla HTML, CSS, JavaScript
+  - Fonts/Icons : Google Fonts (Nunito, Plus Jakarta Sans,
+                  Playfair Display), Font Awesome 6
+  - Auth        : Google OAuth 2.0 + local email/password
+  - Email       : Gmail SMTP (via custom socket-based sender)
+  - Storage     : storage/users.json (flat file, flock used
+                  for basic write safety)
+  - Config      : .env file loaded at runtime by config.php
+
+
+------------------------------------------------------------
+  3. FOLDER STRUCTURE
+------------------------------------------------------------
+  config.php              — App-wide constants and .env loader
+  index.php               — Home / landing page
+  login.php               — Sign-in and sign-up page (tabbed)
+  dashboard.php           — User dashboard (BMI, profile stats)
+  diagnose.php            — Pregnancy self-assessment form
+  history.php             — Full profile snapshot history
+  logout.php              — Session destroy + redirect
+  assets/css/style.css    — All styles (light + dark theme)
+  storage/users.json      — Persistent user records
+  auth/
+    callback.php          — Google OAuth callback handler
+    google.php            — Google OAuth redirect initiator
+    signin_local.php      — Local email/password sign-in API
+    signup_send_otp.php   — OTP generation + Gmail SMTP send
+    signup_verify_otp.php — OTP verification check
+    signup_register.php   — Final account creation
+    signup_common.php     — Shared helpers (loadUsers,
+                            saveUsers, findUserByEmail,
+                            generateNumericOtp, sendOtpEmail,
+                            jsonResponse)
+    save_profile.php      — Saves intake profile to JSON
+    generate_report.php   — Creates Word-compatible .doc report
+                            from assessment + intake data
+    download_history.php  — Download profile history as .doc
+
+
+------------------------------------------------------------
+  4. CONFIG & ENVIRONMENT (config.php)
+------------------------------------------------------------
+config.php runs first on every page via require_once.
+
+Steps it performs:
+  a) Reads .env from the project root (never committed).
+     Parses KEY=VALUE lines into $_ENV and putenv().
+  b) Defines constants from env values:
+       GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+       SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM_EMAIL
+  c) Defines fixed app constants:
+       APP_NAME = 'PregnaTrack'
+       BASE_URL = 'http://localhost/Pregnancy'
+       SESSION_LIFETIME = 3600 (1 hour)
+       SMTP_HOST, SMTP_PORT, SMTP_SECURE
+       Google OAuth endpoint URLs
+
+
+------------------------------------------------------------
+  5. AUTHENTICATION FLOW
+------------------------------------------------------------
+
+  — — — PATH A: Google OAuth — — —
+
+  1. User clicks "Sign in with Google" on login.php.
+  2. auth/google.php generates a random CSRF state token,
+     stores it in $_SESSION['oauth_state'], then redirects
+     the browser to Google's OAuth consent screen
+     (GOOGLE_AUTH_URL) with scope=openid+email+profile.
+
+  3. Google redirects back to auth/callback.php with:
+       ?code=<auth_code>&state=<csrf_token>
+
+  4. callback.php validates the CSRF state token using
+     hash_equals() to prevent timing attacks.
+
+  5. It exchanges the auth code for an access token via
+     a POST to GOOGLE_TOKEN_URL (using cURL).
+
+  6. It fetches the user's profile (name, email, picture,
+     sub) from GOOGLE_USER_URL using the access token.
+
+  7. session_regenerate_id(true) is called to prevent
+     session fixation.
+
+  8. The user record is found or created in users.json
+     (matched by Google's 'sub' ID or email).
+
+  9. User array is written into $_SESSION['user'] and the
+     browser is redirected to index.php.
+
+
+  — — — PATH B: Local Email / Password — — —
+
+  SIGN UP (3-step process):
+
+  Step 1 — Send OTP (auth/signup_send_otp.php)
+    - User submits email on the Sign Up tab.
+    - Script checks email not already registered.
+    - Enforces a 30-second cooldown between OTP sends
+      (SIGNUP_OTP_COOLDOWN).
+    - Generates a 6-digit random OTP via random_int().
+    - Stores in $_SESSION['signup_otp']:
+        email, bcrypt hash of OTP, expiry timestamp
+        (5 minutes), attempt counter, verified flag.
+    - Sends OTP email via Gmail SMTP over TLS port 587.
+
+  Step 2 — Verify OTP (auth/signup_verify_otp.php)
+    - User submits the 6-digit code.
+    - Checks session OTP not expired (5 min window).
+    - Enforces max 5 attempts (SIGNUP_OTP_MAX_ATTEMPTS).
+    - Verifies input against stored bcrypt hash using
+      password_verify().
+    - On success: sets verified=true and verified_at
+      timestamp in session; does NOT create account yet.
+
+  Step 3 — Register (auth/signup_register.php)
+    - User submits full name, email, password (min 8 chars).
+    - Re-checks email uniqueness.
+    - Confirms OTP session is verified for that email and
+      verification was within the last 10 minutes.
+    - Creates new user record:
+        id = 'usr_' + 16 random hex chars (random_bytes)
+        password_hash = bcrypt (PASSWORD_DEFAULT)
+    - Appends record to users.json via saveUsers() with
+      flock() for write safety.
+    - Regenerates session ID, writes $_SESSION['user'],
+      clears OTP session state, redirects to index.php.
+
+  SIGN IN (auth/signin_local.php)
+    - Accepts email + password via POST.
+    - Looks up user in users.json by email.
+    - Verifies password with password_verify().
+    - Regenerates session ID, writes $_SESSION['user'].
+    - Returns JSON { ok: true, redirect: ".../index.php" }.
+    - Frontend JS reads the redirect and navigates.
+
+  SIGN OUT (logout.php)
+    - Calls session_destroy() and redirects to login.php.
+
+
+------------------------------------------------------------
+  6. PAGE FLOWS (AUTHENTICATED)
+------------------------------------------------------------
+
+  index.php (Home)
+    - If logged in: reads $_SESSION['user'] to prefill
+      the profile modal (first/last name, middle initial
+      parsed from stored name).
+    - Shows welcome hero, navigation with user menu
+      (avatar or initials, dropdown with profile, logout).
+    - Profile modal POSTs to auth/save_profile.php via JS.
+
+  dashboard.php
+    - Auth-guarded (redirects to login.php if no session).
+    - Loads the user's full record from users.json to get
+      profile_history (array of snapshots).
+    - Computes BMI from stored height/weight using SI units
+      internally (ft→m, lbs→kg conversions applied).
+    - Classifies BMI: Underweight / Normal / Overweight /
+      Obese with colour coding.
+    - Displays stat cards (BMI, height, weight) and a
+      time-of-day greeting.
+    - Shows profile history table (most recent first).
+
+  diagnose.php (Pregnancy Assessment)
+    - Auth-guarded.
+    - Multi-step form: intake fields (personal info,
+      gestational week, trimester) then symptom checklist.
+    - Symptom severity levels: normal, watch, warning,
+      emergency (colour-coded).
+    - On completion, form data is posted to
+      auth/generate_report.php to produce a .doc download.
+
+  history.php
+    - Auth-guarded.
+    - Same data loading as dashboard (loadUsers + loop by ID).
+    - Displays all profile snapshots in a detailed timeline
+      with BMI, height, weight, date/time of each save.
+    - Provides a "Download History" button that POSTs to
+      auth/download_history.php.
+
+
+------------------------------------------------------------
+  7. PROFILE SAVING FLOW (auth/save_profile.php)
+------------------------------------------------------------
+  1. POST request arrives with: first_name, last_name,
+     middle_initial, age, height, height_unit, weight,
+     weight_unit, first_pregnancy.
+  2. Validates all fields server-side (age 12–60,
+     height/weight within unit-specific ranges, etc.).
+  3. Loads users.json, finds user by session ID.
+  4. If a profile already exists, pushes the old profile
+     onto profile_history array (max history kept).
+  5. Writes the new profile object with updated_at timestamp.
+  6. Saves updated users array back to users.json.
+  7. Updates $_SESSION['user']['profile'] so the session
+     reflects the latest without requiring re-login.
+  8. Returns JSON { ok: true }.
+
+
+------------------------------------------------------------
+  8. REPORT GENERATION (auth/generate_report.php)
+------------------------------------------------------------
+  - Accepts POST with:
+      intake_json   — JSON-encoded patient intake object
+      symptoms_json — JSON-encoded symptom array
+      week          — gestational week (0–40)
+      trimester     — trimester number (0–3)
+  - Sanitises every symptom label with strip_tags() and
+    limits to 200 chars; validates severity level against
+    allowlist.
+  - Computes BMI from intake height/weight.
+  - Builds a full HTML document styled to look like a
+    medical form, then outputs it with headers:
+      Content-Type: application/msword
+      Content-Disposition: attachment; filename="..."
+  - Browser receives it as a downloadable .doc file
+    (HTML wrapped in Word-compatible markup).
+
+  download_history.php follows the same pattern but
+  generates a history table instead of an assessment form.
+
+
+------------------------------------------------------------
+  9. DATA MODEL (users.json)
+------------------------------------------------------------
+  Each user record contains:
+
+  {
+    "id":             "usr_<16 hex chars>",
+    "name":           "Full Name",
+    "email":          "user@example.com",
+    "password_hash":  "<bcrypt>",        // local accounts
+    "provider":       "local" | "google",
+    "created_at":     "<ISO 8601>",
+    "profile": {
+      "first_name":      "...",
+      "last_name":       "...",
+      "middle_initial":  "X",
+      "age":             28,
+      "height":          165.0,
+      "height_unit":     "cm",
+      "weight":          60.0,
+      "weight_unit":     "kg",
+      "first_pregnancy": "yes" | "no",
+      "updated_at":      "<ISO 8601>"
+    },
+    "profile_history": [ ...older profile snapshots... ]
+  }
+
+  Google OAuth users have no password_hash field.
+  Their 'id' field maps to Google's 'sub' identifier.
+
+
+------------------------------------------------------------
+  10. THEME SYSTEM
+------------------------------------------------------------
+  - Theme preference stored in localStorage key
+    'pregnatrack_theme' (value: 'dark' or 'light').
+  - An inline <script> at the top of every page reads this
+    before the CSS loads and sets data-theme="dark" on
+    <html> to prevent a flash of unstyled/wrong-themed
+    content (FOUC prevention).
+  - The toggle button (#themeToggle) in the nav switches
+    the attribute and updates localStorage.
+  - All colours defined as CSS custom properties in
+    assets/css/style.css; dark theme overrides them under
+    [data-theme="dark"] selector.
+
+
+------------------------------------------------------------
+  11. SECURITY MEASURES IN PLACE
+------------------------------------------------------------
+  - Passwords: bcrypt via password_hash(PASSWORD_DEFAULT).
+  - Sessions: session_regenerate_id(true) on every login.
+  - OAuth CSRF: state token validated with hash_equals().
+  - Output escaping: htmlspecialchars() with ENT_QUOTES
+    used on all user data before rendering into HTML.
+  - Input sanitisation: strip_tags(), substr length caps,
+    allowlist validation on units/severity levels.
+  - OTP: stored as bcrypt hash, never as plaintext. Rate-
+    limited with cooldown + max-attempts enforcement.
+  - Secrets: never hardcoded; loaded from .env at runtime.
+  - File writes: flock(LOCK_EX) before writing users.json.
+
+  Known gaps:
+  - No CSRF tokens on POST forms (save_profile, generate
+    report). An attacker could forge these requests.
+  - No rate limiting on sign-in attempts (brute-force risk).
+  - Flat-file storage is not safe under heavy concurrency
+    beyond what flock() provides.
+
+
+============================================================
+  END OF DOCUMENT
+============================================================
