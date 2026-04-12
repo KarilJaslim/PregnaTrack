@@ -35,14 +35,14 @@
 // ============================================================
 define('GOOGLE_CLIENT_ID',     (string) ($_ENV['GOOGLE_CLIENT_ID']     ?? ''));
 define('GOOGLE_CLIENT_SECRET', (string) ($_ENV['GOOGLE_CLIENT_SECRET'] ?? ''));
-define('GOOGLE_REDIRECT_URI',  'http://localhost/Pregnancy/auth/callback.php');
+define('GOOGLE_REDIRECT_URI',  (string) ($_ENV['GOOGLE_REDIRECT_URI']  ?? 'http://localhost/Pregnancy/auth/callback.php'));
 
 // ============================================================
 //  App settings
 // ============================================================
 define('APP_NAME',    'PregnaTrack');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL',    'http://localhost/Pregnancy');
+define('BASE_URL',    rtrim((string) ($_ENV['APP_URL'] ?? 'http://localhost/Pregnancy'), '/'));
 
 // Session lifetime in seconds (1 hour)
 define('SESSION_LIFETIME', 3600);

@@ -74,6 +74,7 @@ if ($isLoggedIn) {
             <?php if ($isLoggedIn): ?>
                 <?php $pic = htmlspecialchars($user['picture'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                 <a href="diagnose.php" class="btn-nav-outline nav-page-link">Self-Diagnose</a>
+                <a href="hospitals.php" class="btn-nav-outline nav-page-link">Hospitals</a>
                 <a href="dashboard.php" class="btn-nav-outline nav-page-link">Dashboard</a>
 
                 <!-- â”€â”€ User dropdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
@@ -114,6 +115,10 @@ if ($isLoggedIn) {
                         <a href="diagnose.php" class="dropdown-item" role="menuitem">
                             <i class="fas fa-stethoscope" aria-hidden="true"></i>
                             Self-Diagnose
+                        </a>
+                        <a href="hospitals.php" class="dropdown-item" role="menuitem">
+                            <i class="fas fa-hospital" aria-hidden="true"></i>
+                            Hospital Finder
                         </a>
                         <a href="dashboard.php#history" class="dropdown-item" role="menuitem">
                             <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>

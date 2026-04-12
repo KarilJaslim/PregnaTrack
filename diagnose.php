@@ -59,6 +59,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 <i class="fas fa-sun"   id="themeIconLight" hidden></i>
             </button>
 
+            <a href="hospitals.php" class="btn-nav-outline nav-page-link">Hospitals</a>
             <a href="dashboard.php" class="btn-nav-outline nav-page-link">Dashboard</a>
 
             <div class="user-menu" id="userMenu">
@@ -98,6 +99,10 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                     <a href="diagnose.php" class="dropdown-item dropdown-item-active" role="menuitem">
                         <i class="fas fa-stethoscope" aria-hidden="true"></i>
                         Self-Diagnose
+                    </a>
+                    <a href="hospitals.php" class="dropdown-item" role="menuitem">
+                        <i class="fas fa-hospital" aria-hidden="true"></i>
+                        Hospital Finder
                     </a>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item dropdown-theme-row" id="dropdownThemeToggle"
@@ -722,6 +727,83 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
             return d.innerHTML;
         }
 
+        // ── Health tips per symptom (green + blue blocks) ─────────────
+        var SYMPTOM_TIPS = {
+            nausea:            ['Eat small, frequent meals every 2–3 hours.', 'Try ginger tea, ginger candy, or vitamin B6 (ask your doctor first).', 'Avoid spicy, fatty foods and strong smells.'],
+            vomiting_mild:     ['Cold, bland foods — crackers, toast, rice — are easier to keep down.', 'Sip water or electrolyte drinks slowly throughout the day.', 'Rest after meals; avoid lying down immediately.'],
+            fatigue:           ['Rest whenever possible — short 20–30 min naps help without disturbing night sleep.', 'Eat iron-rich foods: spinach, beans, red meat, fortified cereals.', 'Light daily walks (15–20 min) can actually increase your energy.'],
+            breast_tender:     ['Wear a supportive, well-fitting maternity or sports bra — even at night if needed.', 'Avoid tight or underwire bras that press on breast tissue.'],
+            food_cravings:     ['Satisfy cravings in moderation while keeping meals nutritionally balanced.', 'Craving non-food items (dirt, clay, ice)? Tell your doctor — it may signal a deficiency.'],
+            mood_swings:       ['Talk openly with your partner or support system about how you feel.', 'Prenatal yoga and mindfulness meditation can significantly help mood stability.'],
+            insomnia:          ['Use a full-length pregnancy pillow to support belly, hips, and back.', 'Sleep on your left side to improve blood circulation to the baby.', 'Avoid screens 1 hour before bed; try a warm bath or light reading instead.'],
+            smell_sensitivity: ['Keep spaces well-ventilated; step outside for fresh air regularly.', 'Ask people around you to avoid strong perfumes or cooking strong-smelling foods.'],
+            cramping_mild:     ['Rest and drink at least 8–10 glasses of water daily.', 'A warm (not hot) compress on the lower abdomen may help.', 'Avoid heavy lifting and prolonged standing.'],
+            bloating:          ['Eat smaller, more frequent meals and chew food slowly.', 'Avoid carbonated drinks and gas-producing foods (beans, cabbage, broccoli).', 'A gentle walk after meals aids digestion.'],
+            constipation:      ['Increase fiber: fruits, vegetables, whole grains, prunes, and flaxseed.', 'Aim for 8–10+ glasses of water per day.', 'A daily light walk helps stimulate bowel movement naturally.'],
+            heartburn:         ['Eat smaller meals; avoid eating within 2–3 hours of bedtime.', 'Avoid spicy, acidic, and fried foods.', 'Sleep with your head and upper body elevated using extra pillows.'],
+            round_lig:         ['Change positions slowly, especially when rising from a chair or bed.', 'Rest when pain occurs — it usually passes within minutes.', 'Flex your hips before coughing or sneezing to reduce sharp twinges.'],
+            braxton_mild:      ['Rest and drink a large glass of water — dehydration is a common trigger.', 'Change activity level: walk around if resting, or lie down if you were active.'],
+            pelvic_pressure:   ['Elevate your feet when seated; avoid prolonged standing.', 'A maternity support belt or belly band can significantly relieve pressure.', 'Prenatal Kegel exercises strengthen the pelvic-floor muscles.'],
+            headache_mild:     ['Stay well-hydrated throughout the day — dehydration is a top cause.', 'Rest in a quiet, darkened room with a cool compress on your forehead.', 'Do not skip meals — low blood sugar triggers headaches.'],
+            dizziness_mild:    ['Always rise slowly from sitting or lying positions.', 'Eat regular, balanced meals to maintain stable blood sugar.', 'Avoid lying flat on your back — side-lying is safer.'],
+            breathless_mild:   ['Sit or stand up straight to give your diaphragm more room.', 'Sleep propped up on extra pillows.', 'Slow down your physical activity and rest when breathlessness occurs.'],
+            nasal_congestion:  ['Use a cool-mist humidifier in your bedroom.', 'Saline nasal spray or rinse is completely safe during pregnancy.', 'Elevate your head slightly when sleeping.'],
+            skin_changes:      ['Apply broad-spectrum SPF 30+ sunscreen daily.', 'Wear a hat and protective clothing outdoors.', 'Pigmentation (linea nigra, melasma) typically fades within months after delivery.'],
+            swelling_ankles:   ['Elevate your feet above heart level for 20–30 min several times a day.', 'Wear compression socks and low-heeled, comfortable shoes.', 'Stay hydrated and reduce sodium intake.'],
+            back_pain:         ['Sleep with a pillow between your knees to align your hips and spine.', 'Wear supportive, low-heeled shoes.', 'Apply a warm (not hot) compress for 15–20 min to sore areas.'],
+            leg_cramps:        ['Stretch your calves before bed: flex foot upward and hold.', 'Stay well-hydrated throughout the day.', 'Eat magnesium-rich foods: bananas, leafy greens, nuts, and seeds.'],
+            spotting_light:    ['Rest and avoid strenuous activity, heavy lifting, or sex until it stops.', 'Use a pad (not a tampon) to monitor amount and color.', 'Record when it started and how heavy it is — your doctor will ask.'],
+            discharge_normal:  ['Wear breathable, cotton underwear and avoid tight-fitting underwear.', 'Do not douche — this disrupts normal vaginal flora.', 'Report any change to yellow, green, grey color or a foul odor immediately.'],
+            freq_urine:        ['Stay hydrated but reduce fluid intake in the 2 hours before bedtime.', 'Never hold in urine when you feel the urge — this can lead to UTIs.'],
+            quickening:        ['Start daily kick counts after 28 weeks: aim for 10 movements in 2 hours.', 'Log movements after a light meal — baby is usually most active then.', 'Lie on your left side to feel movements more easily.'],
+            colostrum:         ['Wear disposable or reusable nursing pads for comfort and to protect clothing.', 'Clean gently with warm water only — avoid soap directly on the nipple.'],
+            painful_urine:     ['Drink plenty of water to help flush bacteria.', 'Never hold in urine.', 'Cranberry juice (unsweetened) may help, but see your doctor — antibiotics are usually needed.'],
+        };
+
+        function getTipsHtml(symptoms) {
+            var tips = [];
+            symptoms.forEach(function (s) {
+                var t = SYMPTOM_TIPS[s.id];
+                if (t && t.length) {
+                    t.forEach(function (tip) { if (tips.indexOf(tip) === -1) tips.push(tip); });
+                }
+            });
+            if (!tips.length) return '';
+            var html = '<div class="assess-tips">' +
+                '<div class="assess-tips-hdr"><i class="fas fa-lightbulb" aria-hidden="true"></i> Health Tips &amp; Home Care</div>' +
+                '<ul class="assess-tips-list">';
+            tips.forEach(function (tip) {
+                html += '<li><i class="fas fa-leaf" aria-hidden="true"></i>' + esc(tip) + '</li>';
+            });
+            html += '</ul></div>';
+            return html;
+        }
+
+        function getMedicalGuidanceHtml() {
+            return '<div class="assess-medical">' +
+                '<div class="assess-medical-hdr"><i class="fas fa-user-doctor" aria-hidden="true"></i> Getting Medical Care</div>' +
+                '<ul class="assess-medical-list">' +
+                '<li><i class="fas fa-phone-flip" aria-hidden="true"></i>Call your <strong>OB/GYN or midwife today</strong> for an urgent appointment.</li>' +
+                '<li><i class="fas fa-hospital" aria-hidden="true"></i>If unavailable, go directly to the nearest <strong>maternity clinic or hospital emergency department</strong>.</li>' +
+                '<li><i class="fas fa-file-medical" aria-hidden="true"></i>Bring your <strong>prenatal record, medication list, and valid ID</strong>.</li>' +
+                '</ul>' +
+                '<div class="assess-doc-links">' +
+                '<a href="https://www.google.com/maps/search/OB+GYN+near+me" target="_blank" rel="noopener noreferrer" class="assess-map-link"><i class="fas fa-map-location-dot" aria-hidden="true"></i> Find an OB/GYN near you</a>' +
+                '<a href="https://www.google.com/maps/search/maternity+hospital+near+me" target="_blank" rel="noopener noreferrer" class="assess-map-link"><i class="fas fa-hospital" aria-hidden="true"></i> Nearest Maternity Hospital</a>' +
+                '</div></div>';
+        }
+
+        function getEmergencyGuidanceHtml() {
+            return '<div class="assess-medical assess-medical-emrg">' +
+                '<div class="assess-medical-hdr"><i class="fas fa-truck-medical" aria-hidden="true"></i> Emergency Steps &mdash; Act Now</div>' +
+                '<ul class="assess-medical-list">' +
+                '<li><i class="fas fa-phone-volume" aria-hidden="true"></i>Call <strong>911</strong> (or your local emergency number) <strong>immediately</strong> &mdash; do not wait.</li>' +
+                '<li><i class="fas fa-ban" aria-hidden="true"></i>Do <strong>not</strong> drive yourself &mdash; call an ambulance or have someone take you.</li>' +
+                '<li><i class="fas fa-comment-medical" aria-hidden="true"></i>Tell dispatchers you are <strong>pregnant (Week ' + currentWeek + ')</strong> when you call.</li>' +
+                '<li><i class="fas fa-map-location-dot" aria-hidden="true"></i><a href="https://www.google.com/maps/search/emergency+hospital+near+me" target="_blank" rel="noopener noreferrer" class="assess-map-link-inline">Find the Nearest Emergency Hospital &rarr;</a></li>' +
+                '</ul></div>';
+        }
+
         function buildAssessment() {
             var checked  = Array.from(document.querySelectorAll('#symptomGroups input[type=checkbox]:checked'));
             var result   = document.getElementById('assessmentResult');
@@ -777,7 +859,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 emergencies.forEach(function (s) {
                     html += '<li><i class="fas fa-diamond" aria-hidden="true"></i>' + esc(s.label) + '</li>';
                 });
-                html += '</ul><a href="tel:911" class="assess-call-btn"><i class="fas fa-phone-volume" aria-hidden="true"></i> Call 911</a></div>';
+                html += '</ul>' + getEmergencyGuidanceHtml() + '<a href="tel:911" class="assess-call-btn"><i class="fas fa-phone-volume" aria-hidden="true"></i> Call 911 Now</a></div>';
                 result.insertAdjacentHTML('beforeend', html);
             }
 
@@ -791,7 +873,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 warnings.forEach(function (s) {
                     html += '<li><i class="fas fa-circle-dot" aria-hidden="true"></i>' + esc(s.label) + '</li>';
                 });
-                html += '</ul></div>';
+                html += '</ul>' + getMedicalGuidanceHtml() + '</div>';
                 result.insertAdjacentHTML('beforeend', html);
             }
 
@@ -805,7 +887,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 watches.forEach(function (s) {
                     html += '<li><i class="fas fa-circle-dot" aria-hidden="true"></i>' + esc(s.label) + '</li>';
                 });
-                html += '</ul></div>';
+                html += '</ul>' + getTipsHtml(watches) + '</div>';
                 result.insertAdjacentHTML('beforeend', html);
             }
 
@@ -819,7 +901,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 normals.forEach(function (s) {
                     html += '<li><i class="fas fa-check" aria-hidden="true"></i>' + esc(s.label) + '</li>';
                 });
-                html += '</ul></div>';
+                html += '</ul>' + getTipsHtml(normals) + '</div>';
                 result.insertAdjacentHTML('beforeend', html);
             }
 

@@ -98,6 +98,10 @@ $prefWeight = $savedSettings['weight_unit'] ?? ($user['profile']['weight_unit'] 
                         <i class="fas fa-stethoscope" aria-hidden="true"></i>
                         Self-Diagnose
                     </a>
+                    <a href="hospitals.php" class="dropdown-item" role="menuitem">
+                        <i class="fas fa-hospital" aria-hidden="true"></i>
+                        Hospital Finder
+                    </a>
                     <a href="dashboard.php#history" class="dropdown-item" role="menuitem">
                         <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
                         History
