@@ -385,6 +385,10 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                         <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
                     </button>
                     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:flex-end">
+                        <button class="diag-btn-save" id="saveAssessmentBtn" type="button">
+                            <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                            Save Assessment
+                        </button>
                         <button class="diag-btn-download" id="downloadReportBtn">
                             <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
                             Download Report
@@ -395,6 +399,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                         </button>
                     </div>
                 </div>
+                <div id="assessmentSaveStatus" class="diag-save-status" aria-live="polite"></div>
             </section>
 
             <!-- Hidden form for Word document download -->
@@ -498,6 +503,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
         var currentWeek      = 0;
         var currentTrimester = 0;
         var intakeData       = {};
+        var lastAssessmentPayload = null;
 
         var trimesterInfo = [
             null,
@@ -655,6 +661,115 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
             });
         }
 
+        function getSelectedSymptoms() {
+            var checked = Array.from(document.querySelectorAll('#symptomGroups input[type=checkbox]:checked'));
+            return checked.map(function (cb) {
+                var sym = SYMPTOMS.find(function (s) { return s.id === cb.value; });
+                if (!sym) return null;
+                var inTrimester = sym.trimester.includes(currentTrimester);
+                var level = sym.level;
+                if (level === 'normal' && !inTrimester && currentTrimester > 0) level = 'watch';
+                return {
+                    id: sym.id,
+                    label: sym.label,
+                    level: level
+                };
+            }).filter(Boolean);
+        }
+
+        function buildAssessmentSummary(symptoms) {
+            var summary = {
+                total: symptoms.length,
+                emergency: 0,
+                warning: 0,
+                watch: 0,
+                normal: 0,
+                overall_level: 'normal'
+            };
+
+            symptoms.forEach(function (s) {
+                if (s.level === 'emergency') summary.emergency += 1;
+                else if (s.level === 'warning') summary.warning += 1;
+                else if (s.level === 'watch') summary.watch += 1;
+                else summary.normal += 1;
+            });
+
+            if (summary.emergency > 0) summary.overall_level = 'emergency';
+            else if (summary.warning > 0) summary.overall_level = 'warning';
+            else if (summary.watch > 0) summary.overall_level = 'watch';
+
+            return summary;
+        }
+
+        function setAssessmentPayload(symptoms) {
+            lastAssessmentPayload = {
+                intake: intakeData,
+                week: currentWeek,
+                trimester: currentTrimester,
+                symptoms: symptoms,
+                summary: buildAssessmentSummary(symptoms)
+            };
+        }
+
+        var saveBtn = document.getElementById('saveAssessmentBtn');
+        var saveStatus = document.getElementById('assessmentSaveStatus');
+
+        function setSaveStatus(type, message) {
+            if (!saveStatus) return;
+            if (!message) {
+                saveStatus.className = 'diag-save-status';
+                saveStatus.textContent = '';
+                return;
+            }
+            saveStatus.className = 'diag-save-status ' + type;
+            saveStatus.textContent = message;
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function () {
+                if (!lastAssessmentPayload || !lastAssessmentPayload.week) {
+                    setSaveStatus('error', 'Run the assessment first before saving.');
+                    return;
+                }
+
+                saveBtn.disabled = true;
+                var original = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Saving...';
+                setSaveStatus('', '');
+
+                var body = new URLSearchParams();
+                body.set('intake_json', JSON.stringify(lastAssessmentPayload.intake || {}));
+                body.set('week', String(lastAssessmentPayload.week || 0));
+                body.set('trimester', String(lastAssessmentPayload.trimester || 0));
+                body.set('symptoms_json', JSON.stringify(lastAssessmentPayload.symptoms || []));
+                body.set('summary_json', JSON.stringify(lastAssessmentPayload.summary || {}));
+
+                fetch('auth/save_assessment.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: body.toString()
+                })
+                .then(function (resp) {
+                    return resp.json().catch(function () {
+                        return { ok: false, message: 'Unexpected response from server.' };
+                    });
+                })
+                .then(function (data) {
+                    if (!data.ok) {
+                        throw new Error(data.message || 'Could not save assessment.');
+                    }
+                    setSaveStatus('success', data.message || 'Assessment saved. Check your dashboard history.');
+                })
+                .catch(function (err) {
+                    setSaveStatus('error', err.message || 'Could not save assessment right now.');
+                })
+                .finally(function () {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = original;
+                });
+            });
+        }
+
         // ── Step navigation ───────────────────────────────────────────
         var stepInfo     = document.getElementById('stepInfo');
         var stepWeek     = document.getElementById('stepWeek');
@@ -691,6 +806,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
         document.getElementById('backToStep3').addEventListener('click', function () { showStep(3); });
         document.getElementById('retakeBtn').addEventListener('click', function () {
             currentWeek = 0; currentTrimester = 0; intakeData = {};
+            lastAssessmentPayload = null;
             weekLabel.textContent = '—';
             weekHint.textContent  = 'Drag the slider or enter your week below.';
             weekHint.innerHTML    = weekHint.textContent;
@@ -698,20 +814,16 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
             toStep3Btn.disabled   = true;
             document.getElementById('symptomGroups').innerHTML = '';
             document.getElementById('assessmentResult').innerHTML = '';
+            if (saveBtn) saveBtn.disabled = false;
+            setSaveStatus('', '');
             showStep(1);
         });
 
         // Download report
         document.getElementById('downloadReportBtn').addEventListener('click', function () {
-            var checked  = Array.from(document.querySelectorAll('#symptomGroups input[type=checkbox]:checked'));
-            var symptoms = checked.map(function (cb) {
-                var sym = SYMPTOMS.find(function (s) { return s.id === cb.value; });
-                if (!sym) return null;
-                var inTrimester = sym.trimester.includes(currentTrimester);
-                var level = sym.level;
-                if (level === 'normal' && !inTrimester && currentTrimester > 0) level = 'watch';
-                return { label: sym.label, level: level };
-            }).filter(Boolean);
+            var symptoms = getSelectedSymptoms().map(function (s) {
+                return { label: s.label, level: s.level };
+            });
             var form = document.getElementById('reportDownloadForm');
             form.elements['intake_json'].value   = JSON.stringify(intakeData);
             form.elements['week'].value          = currentWeek;
@@ -805,34 +917,29 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
         }
 
         function buildAssessment() {
-            var checked  = Array.from(document.querySelectorAll('#symptomGroups input[type=checkbox]:checked'));
+            var symptoms = getSelectedSymptoms();
             var result   = document.getElementById('assessmentResult');
             result.innerHTML = '';
 
-            if (checked.length === 0) {
+            if (symptoms.length === 0) {
                 result.innerHTML =
                     '<div class="assess-block assess-clean">' +
                     '<i class="fas fa-circle-check" aria-hidden="true"></i>' +
                     '<strong>No symptoms selected</strong>' +
                     '<p>You haven\'t checked any symptoms — that\'s great! Keep attending your scheduled prenatal appointments.</p>' +
                     '</div>';
+                setAssessmentPayload([]);
+                setSaveStatus('', '');
                 return;
             }
 
             var emergencies = [], warnings = [], watches = [], normals = [];
 
-            checked.forEach(function (cb) {
-                var symptom = SYMPTOMS.find(function (s) { return s.id === cb.value; });
-                if (!symptom) return;
-
-                var inTrimester = symptom.trimester.includes(currentTrimester);
-                var level = symptom.level;
-                if (level === 'normal' && !inTrimester && currentTrimester > 0) level = 'watch';
-
-                if      (level === 'emergency') emergencies.push(symptom);
-                else if (level === 'warning')   warnings.push(symptom);
-                else if (level === 'watch')      watches.push(symptom);
-                else                             normals.push(symptom);
+            symptoms.forEach(function (symptom) {
+                if      (symptom.level === 'emergency') emergencies.push(symptom);
+                else if (symptom.level === 'warning')   warnings.push(symptom);
+                else if (symptom.level === 'watch')     watches.push(symptom);
+                else                                    normals.push(symptom);
             });
 
             var t      = trimesterInfo[currentTrimester];
@@ -845,7 +952,7 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 '<div class="assess-summary-row">' +
                 '<span class="assess-trim-tag" style="background:' + tBg + ';color:' + tColor + ';border-color:' + tColor + '44">' +
                 '<i class="fas fa-baby" aria-hidden="true"></i> Week ' + currentWeek + ' &mdash; ' + esc(tLabel) + '</span>' +
-                '<span class="assess-count">' + checked.length + ' symptom' + (checked.length !== 1 ? 's' : '') + ' checked</span>' +
+                '<span class="assess-count">' + symptoms.length + ' symptom' + (symptoms.length !== 1 ? 's' : '') + ' checked</span>' +
                 '</div>'
             );
 
@@ -912,6 +1019,9 @@ if (($firstNamePrefill === '' || $lastNamePrefill === '') && $storedName !== '')
                 '<p>This self-assessment is for educational purposes only. The findings above do not constitute a medical diagnosis. Always keep your scheduled prenatal appointments and consult a qualified healthcare provider before acting on any of these results.</p>' +
                 '</div>'
             );
+
+            setAssessmentPayload(symptoms);
+            setSaveStatus('', '');
         }
 
         // ── Theme & dropdown (shared pattern) ────────────────────────

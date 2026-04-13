@@ -46,6 +46,8 @@ $users[] = [
     'password_hash' => password_hash($password, PASSWORD_DEFAULT),
     'provider' => 'local',
     'created_at' => date('c'),
+    'profile_history' => [],
+    'assessment_history' => [],
 ];
 
 if (!saveUsers($users)) {

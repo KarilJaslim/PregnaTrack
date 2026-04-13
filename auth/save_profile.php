@@ -155,6 +155,7 @@ if (!$updated) {
         'created_at'      => date('c'),
         'profile'         => $profile,
         'profile_history' => [],
+        'assessment_history' => [],
     ];
 }
 

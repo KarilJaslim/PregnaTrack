@@ -19,10 +19,12 @@ $initials  = strtoupper(substr($firstName, 0, 1));
 require_once 'auth/signup_common.php';
 $userId = (string)($user['id'] ?? '');
 $profileHistory = [];
+$assessmentHistory = [];
 $currentProfile = $user['profile'] ?? null;
 foreach (loadUsers() as $u) {
     if (($u['id'] ?? '') === $userId) {
         $profileHistory = array_reverse($u['profile_history'] ?? []);
+        $assessmentHistory = array_reverse($u['assessment_history'] ?? []);
         if ($currentProfile === null) $currentProfile = $u['profile'] ?? null;
         break;
     }
@@ -139,6 +141,10 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                     <a href="#history" class="dropdown-item" role="menuitem">
                         <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
                         History
+                    </a>
+                    <a href="#assessment-history" class="dropdown-item" role="menuitem">
+                        <i class="fas fa-notes-medical" aria-hidden="true"></i>
+                        Assessment History
                     </a>
                     <a href="settings.php" class="dropdown-item" role="menuitem">
                         <i class="fas fa-gear" aria-hidden="true"></i>
@@ -361,6 +367,105 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                 <?php endif; ?>
             </section>
 
+            <section class="hist-section" id="assessment-history">
+                <div class="hist-section-hdr">
+                    <div>
+                        <h2 class="hist-section-title">
+                            <i class="fas fa-notes-medical" aria-hidden="true"></i> Assessment History
+                        </h2>
+                        <p class="hist-section-sub">Saved self-assessment results from your symptom checks.</p>
+                    </div>
+                    <a href="diagnose.php" class="btn-dl-all" style="background:linear-gradient(135deg,#ec4899,#a855f7)">
+                        <i class="fas fa-plus" aria-hidden="true"></i> New Assessment
+                    </a>
+                </div>
+
+                <?php if (empty($assessmentHistory)): ?>
+                <div class="assessment-empty">
+                    <div class="no-profile-icon"><i class="fas fa-notes-medical" aria-hidden="true"></i></div>
+                    <h2>No Assessment History Yet</h2>
+                    <p>Save your first assessment result to see it here anytime.</p>
+                    <a href="diagnose.php" class="btn-complete-profile">
+                        <i class="fas fa-stethoscope" aria-hidden="true"></i> Start Assessment
+                    </a>
+                </div>
+                <?php else: ?>
+                <div class="assessment-history-list">
+                    <?php foreach ($assessmentHistory as $assessment): ?>
+                    <?php
+                        $savedTs = strtotime((string)($assessment['saved_at'] ?? '')) ?: 0;
+                        $savedDate = $savedTs ? date('j M Y', $savedTs) : '—';
+                        $savedTime = $savedTs ? date('g:i A', $savedTs) : '';
+
+                        $week = (int)($assessment['week'] ?? 0);
+                        $trimesterLabel = trim((string)($assessment['trimester_label'] ?? ''));
+                        if ($trimesterLabel === '') {
+                            $trimester = (int)($assessment['trimester'] ?? 0);
+                            $trimesterLabel = $trimester === 1 ? '1st Trimester' : ($trimester === 2 ? '2nd Trimester' : '3rd Trimester');
+                        }
+
+                        $risk = strtolower((string)($assessment['overall_level'] ?? 'normal'));
+                        $riskClass = 'risk-normal';
+                        $riskLabel = 'Normal';
+                        if ($risk === 'emergency') {
+                            $riskClass = 'risk-emergency';
+                            $riskLabel = 'Emergency';
+                        } elseif ($risk === 'warning') {
+                            $riskClass = 'risk-warning';
+                            $riskLabel = 'See Doctor';
+                        } elseif ($risk === 'watch') {
+                            $riskClass = 'risk-watch';
+                            $riskLabel = 'Monitor';
+                        }
+
+                        $counts = is_array($assessment['counts'] ?? null) ? $assessment['counts'] : [];
+                        $symptoms = is_array($assessment['symptoms'] ?? null) ? $assessment['symptoms'] : [];
+                        $total = (int)($counts['total'] ?? count($symptoms));
+                        $previewSymptoms = array_slice($symptoms, 0, 3);
+                        $extraSymptoms = count($symptoms) - count($previewSymptoms);
+                    ?>
+                    <article class="assessment-history-card">
+                        <div class="assessment-history-top">
+                            <div>
+                                <div class="assessment-history-date">
+                                    <?= htmlspecialchars($savedDate, ENT_QUOTES, 'UTF-8') ?>
+                                    <?php if ($savedTime): ?>
+                                        <span class="assessment-history-time"><?= htmlspecialchars($savedTime, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="assessment-history-meta">
+                                    Week <?= $week > 0 ? $week : '—' ?> &middot; <?= htmlspecialchars($trimesterLabel, ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                            </div>
+                            <span class="assessment-risk-badge <?= $riskClass ?>"><?= htmlspecialchars($riskLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                        </div>
+
+                        <div class="assessment-history-body">
+                            <div class="assessment-count-pills">
+                                <span class="assessment-count-pill"><strong><?= $total ?></strong> symptoms</span>
+                                <span class="assessment-count-pill"><strong><?= (int)($counts['warning'] ?? 0) ?></strong> warning</span>
+                                <span class="assessment-count-pill"><strong><?= (int)($counts['emergency'] ?? 0) ?></strong> emergency</span>
+                            </div>
+
+                            <?php if (!empty($previewSymptoms)): ?>
+                            <div class="assessment-symptom-preview">
+                                <?php foreach ($previewSymptoms as $symptom): ?>
+                                    <span class="assessment-symptom-chip"><?= htmlspecialchars((string)($symptom['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php endforeach; ?>
+                                <?php if ($extraSymptoms > 0): ?>
+                                    <span class="assessment-symptom-chip">+<?= $extraSymptoms ?> more</span>
+                                <?php endif; ?>
+                            </div>
+                            <?php else: ?>
+                            <p class="assessment-no-symptoms">No symptoms were selected in this assessment.</p>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </section>
+
             <!-- Quick actions -->
             <?php if ($currentProfile): ?>
             <div class="quick-actions-row">
@@ -453,10 +558,11 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
             });
         });
 
-        // Smooth-scroll for #history anchor in dropdown
-        document.querySelectorAll('a[href="#history"]').forEach(function (a) {
+        // Smooth-scroll for in-page anchors in dropdown
+        document.querySelectorAll('a[href="#history"], a[href="#assessment-history"]').forEach(function (a) {
             a.addEventListener('click', function (e) {
-                var target = document.getElementById('history');
+                var targetId = this.getAttribute('href').replace('#', '');
+                var target = document.getElementById(targetId);
                 if (target) {
                     e.preventDefault();
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
