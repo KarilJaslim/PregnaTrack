@@ -20,6 +20,11 @@ function getSmtpLastError(): string
 
 function usersFilePath(): string
 {
+    $override = trim((string) getenv('USERS_FILE_PATH'));
+    if ($override !== '') {
+        return $override;
+    }
+
     return dirname(__DIR__) . '/storage/users.json';
 }
 
@@ -42,6 +47,12 @@ function loadUsers(): array
 function saveUsers(array $users): bool
 {
     $file = usersFilePath();
+    $dir = dirname($file);
+
+    if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+        return false;
+    }
+
     $fp = fopen($file, 'c+');
     if (!$fp) {
         return false;
