@@ -393,7 +393,7 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                 </div>
                 <?php else: ?>
                 <div class="assessment-history-list">
-                    <?php foreach ($assessmentHistory as $assessment): ?>
+                    <?php foreach ($assessmentHistory as $index => $assessment): ?>
                     <?php
                         $savedTs = strtotime((string)($assessment['saved_at'] ?? '')) ?: 0;
                         $savedDate = $savedTs ? date('j M Y', $savedTs) : '—';
@@ -425,6 +425,39 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                         $total = (int)($counts['total'] ?? count($symptoms));
                         $previewSymptoms = array_slice($symptoms, 0, 3);
                         $extraSymptoms = count($symptoms) - count($previewSymptoms);
+
+                        $intake = is_array($assessment['intake'] ?? null) ? $assessment['intake'] : [];
+                        $height = (float)($intake['height'] ?? 0);
+                        $weight = (float)($intake['weight'] ?? 0);
+                        $heightUnit = (string)($intake['height_unit'] ?? 'cm');
+                        $weightUnit = (string)($intake['weight_unit'] ?? 'kg');
+                        $heightMeters = $heightUnit === 'ft' ? $height * 0.3048 : $height / 100;
+                        $weightKg = $weightUnit === 'lbs' ? $weight * 0.453592 : $weight;
+                        $assessmentBmi = $heightMeters > 0 && $weightKg > 0 ? round($weightKg / ($heightMeters * $heightMeters), 1) : null;
+
+                        $assessmentBmiLabel = 'Unavailable';
+                        $assessmentBmiClass = 'bmi-muted';
+                        if ($assessmentBmi !== null) {
+                            if ($assessmentBmi < 18.5) {
+                                $assessmentBmiLabel = 'Underweight';
+                                $assessmentBmiClass = 'bmi-underweight';
+                            } elseif ($assessmentBmi < 25) {
+                                $assessmentBmiLabel = 'Normal';
+                                $assessmentBmiClass = 'bmi-normal';
+                            } elseif ($assessmentBmi < 30) {
+                                $assessmentBmiLabel = 'Overweight';
+                                $assessmentBmiClass = 'bmi-overweight';
+                            } else {
+                                $assessmentBmiLabel = 'Obese';
+                                $assessmentBmiClass = 'bmi-obese';
+                            }
+                        }
+
+                        $isLatestAssessment = $index === 0;
+                        $assessmentId = trim((string)($assessment['id'] ?? ''));
+                        $downloadQuery = $assessmentId !== ''
+                            ? 'id=' . rawurlencode($assessmentId)
+                            : 'entry=' . (string)$index;
                     ?>
                     <article class="assessment-history-card">
                         <div class="assessment-history-top">
@@ -435,8 +468,15 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                                         <span class="assessment-history-time"><?= htmlspecialchars($savedTime, ENT_QUOTES, 'UTF-8') ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <div class="assessment-history-meta">
-                                    Week <?= $week > 0 ? $week : '—' ?> &middot; <?= htmlspecialchars($trimesterLabel, ENT_QUOTES, 'UTF-8') ?>
+                                <div class="assessment-history-meta-row">
+                                    <div class="assessment-history-meta">
+                                        Week <?= $week > 0 ? $week : '—' ?> &middot; <?= htmlspecialchars($trimesterLabel, ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                    <?php if ($assessmentBmi !== null): ?>
+                                        <span class="assessment-bmi-pill <?= $assessmentBmiClass ?>">
+                                            <?= $isLatestAssessment ? 'Latest BMI' : 'BMI' ?>: <?= number_format($assessmentBmi, 1) ?> (<?= htmlspecialchars($assessmentBmiLabel, ENT_QUOTES, 'UTF-8') ?>)
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <span class="assessment-risk-badge <?= $riskClass ?>"><?= htmlspecialchars($riskLabel, ENT_QUOTES, 'UTF-8') ?></span>
@@ -461,6 +501,13 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                             <?php else: ?>
                             <p class="assessment-no-symptoms">No symptoms were selected in this assessment.</p>
                             <?php endif; ?>
+
+                            <div class="assessment-history-actions">
+                                <a href="auth/download_assessment.php?<?= htmlspecialchars($downloadQuery, ENT_QUOTES, 'UTF-8') ?>" class="btn-dl-entry" download>
+                                    <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+                                    Download this assessment
+                                </a>
+                            </div>
                         </div>
                     </article>
                     <?php endforeach; ?>

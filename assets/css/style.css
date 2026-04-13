@@ -2927,6 +2927,53 @@ a {
     color: var(--gray-500);
 }
 
+.assessment-history-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.55rem;
+    margin-top: 0.18rem;
+}
+
+.assessment-bmi-pill {
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.16rem 0.5rem;
+    white-space: nowrap;
+}
+
+.assessment-bmi-pill.bmi-normal {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.assessment-bmi-pill.bmi-underweight {
+    background: #dbeafe;
+    color: #1e3a8a;
+    border-color: #bfdbfe;
+}
+
+.assessment-bmi-pill.bmi-overweight {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fed7aa;
+}
+
+.assessment-bmi-pill.bmi-obese {
+    background: #ffe4e6;
+    color: #9f1239;
+    border-color: #fecdd3;
+}
+
+.assessment-bmi-pill.bmi-muted {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: #e5e7eb;
+}
+
 .assessment-risk-badge {
     display: inline-flex;
     align-items: center;
@@ -2999,6 +3046,14 @@ a {
     color: var(--gray-500);
 }
 
+.assessment-history-actions {
+    margin-top: 0.75rem;
+    padding-top: 0.68rem;
+    border-top: 1px solid rgba(236,72,153,0.12);
+    display: flex;
+    justify-content: flex-end;
+}
+
 [data-theme="dark"] .assessment-empty {
     background: var(--dm-surface);
     border-color: var(--dm-border);
@@ -3013,6 +3068,31 @@ a {
 [data-theme="dark"] .assessment-history-date { color: var(--dm-heading); }
 [data-theme="dark"] .assessment-history-time { color: var(--dm-muted); }
 [data-theme="dark"] .assessment-history-meta { color: var(--dm-muted); }
+[data-theme="dark"] .assessment-bmi-pill.bmi-normal {
+    background: rgba(34,197,94,0.2);
+    color: #86efac;
+    border-color: rgba(34,197,94,0.38);
+}
+[data-theme="dark"] .assessment-bmi-pill.bmi-underweight {
+    background: rgba(59,130,246,0.2);
+    color: #93c5fd;
+    border-color: rgba(59,130,246,0.36);
+}
+[data-theme="dark"] .assessment-bmi-pill.bmi-overweight {
+    background: rgba(249,115,22,0.2);
+    color: #fdba74;
+    border-color: rgba(249,115,22,0.36);
+}
+[data-theme="dark"] .assessment-bmi-pill.bmi-obese {
+    background: rgba(244,63,94,0.2);
+    color: #fda4af;
+    border-color: rgba(244,63,94,0.36);
+}
+[data-theme="dark"] .assessment-bmi-pill.bmi-muted {
+    background: var(--dm-surface2);
+    color: var(--dm-muted);
+    border-color: var(--dm-border);
+}
 [data-theme="dark"] .assessment-count-pill {
     background: var(--dm-surface2);
     border-color: var(--dm-border);
@@ -3024,6 +3104,7 @@ a {
     border-color: rgba(168,85,247,0.35);
 }
 [data-theme="dark"] .assessment-no-symptoms { color: var(--dm-muted); }
+[data-theme="dark"] .assessment-history-actions { border-top-color: var(--dm-border); }
 
 @media (max-width: 600px) {
     .hist-toggle-center   { display: none; }
