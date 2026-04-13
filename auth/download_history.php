@@ -246,15 +246,6 @@ header('Pragma: no-cache');
     font-size: 8pt;
     color: #92400e;
   }
-  /* Footer */
-  .doc-footer {
-    margin-top: 24pt;
-    padding-top: 10pt;
-    border-top: 1pt solid #e5e7eb;
-    font-size: 8pt;
-    color: #9ca3af;
-    text-align: center;
-  }
   @page { margin: 1in; }
 </style>
 </head>
@@ -374,13 +365,6 @@ header('Pragma: no-cache');
     This document is generated from self-reported data entered into PregnaTrack and is intended
     for personal record-keeping purposes only. It does not constitute medical advice, diagnosis,
     or treatment. Always consult a qualified healthcare professional for medical guidance.
-  </div>
-
-  <!-- Footer -->
-  <div class="doc-footer">
-    PregnaTrack &mdash; Maternal Health Companion &nbsp;|&nbsp;
-    Report generated <?= date('j F Y') ?> &nbsp;|&nbsp;
-    <?= e($user['email'] ?? '') ?>
   </div>
 
 </div>
