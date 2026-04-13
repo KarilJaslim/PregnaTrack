@@ -3,6 +3,32 @@ require_once dirname(__DIR__) . '/config.php';
 require_once __DIR__ . '/signup_common.php';
 session_start();
 
+ini_set('display_errors', '0');
+
+register_shutdown_function(static function (): void {
+    $error = error_get_last();
+    if (!$error) {
+        return;
+    }
+
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($error['type'] ?? 0, $fatalTypes, true)) {
+        return;
+    }
+
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=UTF-8');
+    }
+
+    echo json_encode([
+        'ok' => false,
+        'message' => 'Server error while sending OTP. Please try again.',
+    ]);
+});
+
+try {
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['ok' => false, 'message' => 'Method not allowed.'], 405);
 }
@@ -42,3 +68,6 @@ $_SESSION['signup_otp'] = [
 ];
 
 jsonResponse(['ok' => true, 'message' => 'OTP sent to ' . $email . '.']);
+} catch (Throwable $e) {
+    jsonResponse(['ok' => false, 'message' => 'Server error while sending OTP.'], 500);
+}

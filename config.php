@@ -85,6 +85,10 @@ define('SMTP_PASSWORD',   envValue('SMTP_PASSWORD'));
 define('SMTP_FROM_EMAIL', envValue('SMTP_FROM_EMAIL'));
 define('SMTP_FROM_NAME', envValue('SMTP_FROM_NAME', APP_NAME . ' OTP'));
 
+define('EMAIL_TRANSPORT', strtolower(envValue('EMAIL_TRANSPORT', 'smtp'))); // smtp | resend | auto
+define('RESEND_API_KEY', envValue('RESEND_API_KEY'));
+define('RESEND_FROM_EMAIL', envValue('RESEND_FROM_EMAIL', SMTP_FROM_EMAIL));
+
 // ============================================================
 //  Google OAuth endpoints (do not change)
 // ============================================================

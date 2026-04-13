@@ -131,7 +131,91 @@ function sendSignupOtpEmail(string $toEmail, string $otp): bool
                'Subject: ' . $subject . "\r\n\r\n" .
                $message;
 
-    return smtpSendMail(SMTP_FROM_EMAIL, $toEmail, $payload);
+    if (EMAIL_TRANSPORT === 'resend') {
+        return resendSendMail($toEmail, $subject, $message);
+    }
+
+    $smtpOk = smtpSendMail(SMTP_FROM_EMAIL, $toEmail, $payload);
+    if ($smtpOk) {
+        return true;
+    }
+
+    $smtpError = getSmtpLastError();
+
+    if ((EMAIL_TRANSPORT === 'auto' || EMAIL_TRANSPORT === 'smtp') && RESEND_API_KEY !== '') {
+        if (resendSendMail($toEmail, $subject, $message)) {
+            return true;
+        }
+        setSmtpLastError('SMTP failed: ' . $smtpError . ' | Resend failed: ' . getSmtpLastError());
+        return false;
+    }
+
+    return false;
+}
+
+function resendSendMail(string $toEmail, string $subject, string $plainText): bool
+{
+    if (RESEND_API_KEY === '') {
+        setSmtpLastError('RESEND_API_KEY is missing.');
+        return false;
+    }
+
+    if (RESEND_FROM_EMAIL === '') {
+        setSmtpLastError('RESEND_FROM_EMAIL is missing.');
+        return false;
+    }
+
+    if (!function_exists('curl_init')) {
+        setSmtpLastError('cURL extension is required for Resend transport.');
+        return false;
+    }
+
+    $payload = json_encode([
+        'from' => RESEND_FROM_EMAIL,
+        'to' => [$toEmail],
+        'subject' => $subject,
+        'text' => $plainText,
+    ], JSON_UNESCAPED_SLASHES);
+
+    if ($payload === false) {
+        setSmtpLastError('Could not encode Resend payload.');
+        return false;
+    }
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . RESEND_API_KEY,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_TIMEOUT => SMTP_TIMEOUT,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $responseBody = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($responseBody === false) {
+        setSmtpLastError('Resend request failed: ' . ($curlError !== '' ? $curlError : 'Unknown cURL error'));
+        return false;
+    }
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $decoded = json_decode($responseBody, true);
+        $detail = '';
+        if (is_array($decoded)) {
+            $detail = (string) ($decoded['message'] ?? ($decoded['error']['message'] ?? ''));
+        }
+        setSmtpLastError('Resend returned HTTP ' . $httpCode . ($detail !== '' ? ' - ' . $detail : ''));
+        return false;
+    }
+
+    return true;
 }
 
 function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool

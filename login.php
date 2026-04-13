@@ -312,10 +312,17 @@ if (isset($_SESSION['user'])) {
             setBtnLoading(sendOtpBtn, true);
             try {
                 var r = await fetch('auth/signup_send_otp.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData({email}) });
-                var d = await r.json();
-                setStatus(d.ok ? 'success' : 'error', d.message || 'Could not send OTP.');
+                var raw = await r.text();
+                var d = null;
+                try { d = JSON.parse(raw); } catch (parseErr) {}
+
+                var msg = (d && d.message)
+                    ? d.message
+                    : (raw && raw.trim() !== '' ? raw.trim().replace(/<[^>]*>/g, '') : 'Could not send OTP.');
+
+                setStatus(d && d.ok ? 'success' : 'error', msg);
                 if (d.ok) { otpVerified = false; otpBadge.hidden = true; startCountdown(); }
-            } catch(e) { setStatus('error','Network error while sending OTP.'); }
+            } catch(e) { setStatus('error','Network error while sending OTP. ' + (e && e.message ? e.message : '')); }
             finally { setBtnLoading(sendOtpBtn, false); }
         });
 
