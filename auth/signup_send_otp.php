@@ -22,9 +22,18 @@ register_shutdown_function(static function (): void {
     }
 
     $detail = function_exists('getSmtpLastError') ? trim((string) getSmtpLastError()) : '';
-    $message = 'Server error while sending OTP. Please try again.';
+    $fatalMsg = trim((string) ($error['message'] ?? ''));
+    $fatalFile = basename((string) ($error['file'] ?? ''));
+    $fatalLine = (int) ($error['line'] ?? 0);
+
+    $message = 'Server error while sending OTP.';
     if ($detail !== '' && strtolower($detail) !== 'unknown smtp error') {
         $message .= ' ' . $detail;
+    } elseif ($fatalMsg !== '') {
+        $message .= ' ' . $fatalMsg;
+        if ($fatalFile !== '' && $fatalLine > 0) {
+            $message .= ' (' . $fatalFile . ':' . $fatalLine . ')';
+        }
     }
 
     echo json_encode([
