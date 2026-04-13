@@ -54,16 +54,6 @@ if (isset($_SESSION['user'])) {
 
             <div id="authStatus" class="login-status" aria-live="polite" hidden></div>
 
-            <!-- Tabs -->
-            <div class="login-tabs" role="tablist">
-                <button class="login-tab active" type="button" data-target="signinPanel" role="tab" aria-selected="true">
-                    <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Sign In
-                </button>
-                <button class="login-tab" type="button" data-target="signupPanel" role="tab" aria-selected="false">
-                    <i class="fas fa-user-plus" aria-hidden="true"></i> Sign Up
-                </button>
-            </div>
-
             <!-- Sign In -->
             <div id="signinPanel" class="login-panel active" role="tabpanel">
                 <form id="signinForm" autocomplete="on" novalidate>
@@ -109,86 +99,7 @@ if (isset($_SESSION['user'])) {
                     Continue with Google
                 </a>
 
-                <p class="login-helper">Use email/password from Sign Up, or continue with Google.</p>
-            </div>
-
-            <!-- Sign Up -->
-            <div id="signupPanel" class="login-panel" role="tabpanel" aria-hidden="true">
-                <form id="signupForm" autocomplete="off" novalidate>
-
-                    <div class="login-field">
-                        <label for="signupName">
-                            <i class="fas fa-user" aria-hidden="true"></i> Full Name
-                        </label>
-                        <div class="login-input-wrap">
-                            <input id="signupName" type="text" name="name"
-                                   placeholder="Enter your full name" required autocomplete="name">
-                        </div>
-                    </div>
-
-                    <div class="login-field">
-                        <label for="signupEmail">
-                            <i class="fas fa-envelope" aria-hidden="true"></i> Email Address
-                        </label>
-                        <div class="login-input-wrap">
-                            <input id="signupEmail" type="email" name="email"
-                                   placeholder="name@email.com" required autocomplete="email">
-                        </div>
-                        <div class="otp-controls">
-                            <button type="button" id="sendOtpBtn" class="login-btn-secondary">
-                                <span class="btn-text"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send OTP</span>
-                                <span class="btn-loader" hidden><i class="fas fa-spinner fa-spin"></i></span>
-                            </button>
-                            <span id="otpCountdown" class="otp-countdown" hidden></span>
-                        </div>
-                    </div>
-
-                    <div class="login-field">
-                        <label for="signupOtp">
-                            <i class="fas fa-key" aria-hidden="true"></i> OTP Code
-                        </label>
-                        <div class="login-input-wrap login-otp-wrap">
-                            <input id="signupOtp" type="text" name="otp"
-                                   maxlength="6" inputmode="numeric"
-                                   placeholder="6-digit code" required autocomplete="one-time-code">
-                            <span id="otpVerifiedBadge" class="otp-badge" hidden>
-                                <i class="fas fa-check-circle"></i> Verified
-                            </span>
-                        </div>
-                        <div class="otp-controls">
-                            <button type="button" id="verifyOtpBtn" class="login-btn-secondary">
-                                <span class="btn-text"><i class="fas fa-shield" aria-hidden="true"></i> Verify OTP</span>
-                                <span class="btn-loader" hidden><i class="fas fa-spinner fa-spin"></i></span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="login-field">
-                        <label for="signupPassword">
-                            <i class="fas fa-lock" aria-hidden="true"></i> Password
-                        </label>
-                        <div class="login-input-wrap login-pw-wrap">
-                            <input id="signupPassword" type="password" name="password"
-                                   placeholder="Minimum 8 characters" minlength="8" required autocomplete="new-password">
-                            <button type="button" class="login-eye" data-input="signupPassword" aria-label="Show/hide password">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <div class="password-strength" id="passwordStrength">
-                            <div class="strength-bar">
-                                <div class="strength-fill" id="strengthFill"></div>
-                            </div>
-                            <span class="strength-text" id="strengthText">Password strength</span>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="login-btn-primary" id="signupSubmit">
-                        <span class="btn-text"><i class="fas fa-user-plus" aria-hidden="true"></i> Create Account</span>
-                        <span class="btn-loader" hidden><i class="fas fa-spinner fa-spin"></i></span>
-                    </button>
-                </form>
-
-                <p class="login-helper"><i class="fas fa-info-circle" aria-hidden="true"></i> A verified OTP is required before creating an account.</p>
+                <p class="login-helper">Use your account password, or continue with Google.</p>
             </div>
 
         </div>
@@ -219,9 +130,6 @@ if (isset($_SESSION['user'])) {
         applyTheme(saved ? saved === 'dark' : prefersDark);
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
-        // Tabs
-        var tabs   = document.querySelectorAll('.login-tab');
-        var panels = document.querySelectorAll('.login-panel');
         var statusEl = document.getElementById('authStatus');
 
         function setStatus(type, message) {
@@ -230,18 +138,6 @@ if (isset($_SESSION['user'])) {
             statusEl.className = 'login-status ' + type;
             statusEl.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + message;
         }
-
-        tabs.forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                tabs.forEach(function (t) { t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
-                panels.forEach(function (p) { p.classList.remove('active'); p.setAttribute('aria-hidden','true'); });
-                tab.classList.add('active');
-                tab.setAttribute('aria-selected','true');
-                var panel = document.getElementById(tab.dataset.target);
-                if (panel) { panel.classList.add('active'); panel.setAttribute('aria-hidden','false'); }
-                setStatus('','');
-            });
-        });
 
         // Password toggle
         document.querySelectorAll('.login-eye').forEach(function (btn) {
@@ -252,28 +148,6 @@ if (isset($_SESSION['user'])) {
                 this.querySelector('i').className = 'fas fa-eye' + (show ? '-slash' : '');
             });
         });
-
-        // Password strength
-        var signupPw = document.getElementById('signupPassword');
-        if (signupPw) {
-            signupPw.addEventListener('input', function () {
-                var pw = this.value;
-                var s = 0;
-                if (pw.length >= 8) s++;
-                if (pw.length >= 12) s++;
-                if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
-                if (/[0-9]/.test(pw)) s++;
-                if (/[^a-zA-Z0-9]/.test(pw)) s++;
-                var colors = ['#ef4444','#f97316','#eab308','#84cc16','#22c55e'];
-                var labels = ['Weak','Fair','Good','Strong','Very Strong'];
-                var fill = document.getElementById('strengthFill');
-                var txt  = document.getElementById('strengthText');
-                fill.style.width = (s / 5 * 100) + '%';
-                fill.style.backgroundColor = colors[s-1] || '#ef4444';
-                txt.textContent = 'Password strength: ' + (labels[s-1] || 'Weak');
-                txt.style.color = colors[s-1] || '#ef4444';
-            });
-        }
 
         // Helpers
         function formData(obj) {
@@ -287,59 +161,6 @@ if (isset($_SESSION['user'])) {
             btn.querySelector('.btn-loader').hidden = !on;
         }
 
-        // OTP
-        var sendOtpBtn   = document.getElementById('sendOtpBtn');
-        var verifyOtpBtn = document.getElementById('verifyOtpBtn');
-        var otpBadge     = document.getElementById('otpVerifiedBadge');
-        var otpVerified  = false;
-
-        function startCountdown() {
-            var countdownEl = document.getElementById('otpCountdown');
-            var secs = 60;
-            countdownEl.hidden = false;
-            countdownEl.textContent = 'Resend in ' + secs + 's';
-            sendOtpBtn.disabled = true;
-            var iv = setInterval(function () {
-                secs--;
-                if (secs > 0) { countdownEl.textContent = 'Resend in ' + secs + 's'; }
-                else { clearInterval(iv); countdownEl.hidden = true; sendOtpBtn.disabled = false; }
-            }, 1000);
-        }
-
-        sendOtpBtn.addEventListener('click', async function () {
-            var email = document.getElementById('signupEmail').value.trim();
-            if (!email) { setStatus('error','Enter your email first.'); return; }
-            setBtnLoading(sendOtpBtn, true);
-            try {
-                var r = await fetch('auth/signup_send_otp.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData({email}) });
-                var raw = await r.text();
-                var d = null;
-                try { d = JSON.parse(raw); } catch (parseErr) {}
-
-                var msg = (d && d.message)
-                    ? d.message
-                    : (raw && raw.trim() !== '' ? raw.trim().replace(/<[^>]*>/g, '') : 'Could not send OTP.');
-
-                setStatus(d && d.ok ? 'success' : 'error', msg);
-                if (d.ok) { otpVerified = false; otpBadge.hidden = true; startCountdown(); }
-            } catch(e) { setStatus('error','Network error while sending OTP. ' + (e && e.message ? e.message : '')); }
-            finally { setBtnLoading(sendOtpBtn, false); }
-        });
-
-        verifyOtpBtn.addEventListener('click', async function () {
-            var email = document.getElementById('signupEmail').value.trim();
-            var otp   = document.getElementById('signupOtp').value.trim();
-            if (!email || !otp) { setStatus('error','Enter email and OTP.'); return; }
-            setBtnLoading(verifyOtpBtn, true);
-            try {
-                var r = await fetch('auth/signup_verify_otp.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData({email, otp}) });
-                var d = await r.json();
-                otpVerified = !!d.ok;
-                otpBadge.hidden = !otpVerified;
-                setStatus(d.ok ? 'success' : 'error', d.message || 'Could not verify OTP.');
-            } catch(e) { setStatus('error','Network error while verifying OTP.'); }
-            finally { setBtnLoading(verifyOtpBtn, false); }
-        });
 
         // Sign in
         document.getElementById('signinForm').addEventListener('submit', async function (e) {
@@ -353,21 +174,6 @@ if (isset($_SESSION['user'])) {
                 if (d.ok && d.redirect) setTimeout(function () { window.location.href = d.redirect; }, 600);
                 else setBtnLoading(btn, false);
             } catch(e) { setStatus('error','Network error while signing in.'); setBtnLoading(btn, false); }
-        });
-
-        // Sign up
-        document.getElementById('signupForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            if (!otpVerified) { setStatus('error','Verify OTP before creating your account.'); return; }
-            var btn = document.getElementById('signupSubmit');
-            setBtnLoading(btn, true);
-            try {
-                var r = await fetch('auth/signup_register.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData({ name: document.getElementById('signupName').value.trim(), email: document.getElementById('signupEmail').value.trim(), password: document.getElementById('signupPassword').value }) });
-                var d = await r.json();
-                setStatus(d.ok ? 'success' : 'error', d.message || 'Could not create account.');
-                if (d.ok && d.redirect) setTimeout(function () { window.location.href = d.redirect; }, 600);
-                else setBtnLoading(btn, false);
-            } catch(e) { setStatus('error','Network error while creating account.'); setBtnLoading(btn, false); }
         });
 
     })();
