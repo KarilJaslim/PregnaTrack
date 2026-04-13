@@ -20,6 +20,13 @@ function getSmtpLastError(): string
 
 function usersFilePath(): string
 {
+    if (defined('USERS_FILE_PATH')) {
+        $configured = trim((string) USERS_FILE_PATH);
+        if ($configured !== '') {
+            return $configured;
+        }
+    }
+
     $override = trim((string) getenv('USERS_FILE_PATH'));
     if ($override !== '') {
         return $override;

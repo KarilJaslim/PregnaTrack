@@ -8,6 +8,7 @@
  * 4. Store the profile in the session and redirect to the dashboard
  */
 require_once dirname(__DIR__) . '/config.php';
+require_once __DIR__ . '/signup_common.php';
 session_start();
 
 // ── 1. CSRF check ────────────────────────────────────────────────────────────
@@ -56,16 +57,125 @@ if (empty($userInfo['sub'])) {
     exit;
 }
 
-// ── 5. Store user in session ──────────────────────────────────────────────────
-session_regenerate_id(true); // prevent session fixation
+// ── 5. Reconcile user record and store session ───────────────────────────────
+$googleId = (string) ($userInfo['sub'] ?? '');
+$googleEmail = trim((string) ($userInfo['email'] ?? ''));
+$googleEmailLower = strtolower($googleEmail);
+$googleName = (string) ($userInfo['name'] ?? 'User');
+$googleGivenName = (string) ($userInfo['given_name'] ?? '');
+$googlePicture = (string) ($userInfo['picture'] ?? '');
+
+$users = loadUsers();
+$idxById = null;
+$idxByEmail = null;
+
+foreach ($users as $i => $storedUser) {
+    if ((string) ($storedUser['id'] ?? '') === $googleId) {
+        $idxById = $i;
+    }
+
+    if ($googleEmailLower !== '' && strtolower((string) ($storedUser['email'] ?? '')) === $googleEmailLower) {
+        $idxByEmail = $i;
+    }
+}
+
+if ($idxById !== null && $idxByEmail !== null && $idxById !== $idxByEmail) {
+    $primary = $users[$idxById];
+    $secondary = $users[$idxByEmail];
+
+    $primaryProfileHistory = is_array($primary['profile_history'] ?? null) ? $primary['profile_history'] : [];
+    $secondaryProfileHistory = is_array($secondary['profile_history'] ?? null) ? $secondary['profile_history'] : [];
+    $primary['profile_history'] = array_values(array_slice(array_merge($secondaryProfileHistory, $primaryProfileHistory), -20));
+
+    $primaryAssessments = is_array($primary['assessment_history'] ?? null) ? $primary['assessment_history'] : [];
+    $secondaryAssessments = is_array($secondary['assessment_history'] ?? null) ? $secondary['assessment_history'] : [];
+    $assessmentByKey = [];
+    foreach (array_merge($secondaryAssessments, $primaryAssessments) as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $entryId = trim((string) ($entry['id'] ?? ''));
+        $entrySaved = trim((string) ($entry['saved_at'] ?? ''));
+        $key = $entryId !== '' ? 'id:' . $entryId : 'ts:' . $entrySaved;
+        if (!isset($assessmentByKey[$key])) {
+            $assessmentByKey[$key] = $entry;
+        }
+    }
+    $primary['assessment_history'] = array_values(array_slice(array_values($assessmentByKey), -30));
+
+    if (empty($primary['profile']) && !empty($secondary['profile'])) {
+        $primary['profile'] = $secondary['profile'];
+    }
+
+    if (empty($primary['created_at']) && !empty($secondary['created_at'])) {
+        $primary['created_at'] = $secondary['created_at'];
+    }
+
+    $users[$idxById] = $primary;
+    array_splice($users, $idxByEmail, 1);
+    $idxById = $idxByEmail < $idxById ? $idxById - 1 : $idxById;
+    $idxByEmail = null;
+}
+
+if ($idxById === null && $idxByEmail !== null) {
+    $users[$idxByEmail]['id'] = $googleId;
+    $idxById = $idxByEmail;
+}
+
+if ($idxById === null) {
+    $users[] = [
+        'id' => $googleId,
+        'name' => $googleName,
+        'email' => $googleEmail,
+        'picture' => $googlePicture,
+        'provider' => 'google',
+        'created_at' => date('c'),
+        'profile_history' => [],
+        'assessment_history' => [],
+    ];
+    $idxById = count($users) - 1;
+}
+
+if (!isset($users[$idxById]['profile_history']) || !is_array($users[$idxById]['profile_history'])) {
+    $users[$idxById]['profile_history'] = [];
+}
+if (!isset($users[$idxById]['assessment_history']) || !is_array($users[$idxById]['assessment_history'])) {
+    $users[$idxById]['assessment_history'] = [];
+}
+
+$users[$idxById]['id'] = $googleId;
+$users[$idxById]['name'] = $googleName;
+$users[$idxById]['email'] = $googleEmail;
+$users[$idxById]['picture'] = $googlePicture;
+$users[$idxById]['provider'] = 'google';
+$users[$idxById]['last_login_at'] = date('c');
+if (empty($users[$idxById]['created_at'])) {
+    $users[$idxById]['created_at'] = date('c');
+}
+
+saveUsers($users);
+
+$storedUser = $users[$idxById];
+if (!empty($storedUser['profile']['name'])) {
+    $googleName = (string) $storedUser['profile']['name'];
+    if ($googleGivenName === '') {
+        $googleGivenName = explode(' ', $googleName)[0] ?? $googleName;
+    }
+}
+
+session_regenerate_id(true);
 
 $_SESSION['user'] = [
-    'id'         => $userInfo['sub'],
-    'name'       => $userInfo['name']    ?? 'User',
-    'email'      => $userInfo['email']   ?? '',
-    'picture'    => $userInfo['picture'] ?? '',
-    'given_name' => $userInfo['given_name'] ?? '',
-    'logged_in'  => time(),
+    'id' => $googleId,
+    'name' => $googleName,
+    'email' => $googleEmail,
+    'picture' => $googlePicture,
+    'given_name' => $googleGivenName,
+    'logged_in' => time(),
+    'provider' => 'google',
+    'profile' => $storedUser['profile'] ?? null,
+    'profile_history' => $storedUser['profile_history'] ?? [],
+    'assessment_history' => $storedUser['assessment_history'] ?? [],
 ];
 
 header('Location: ' . BASE_URL . '/index.php');

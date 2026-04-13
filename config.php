@@ -67,6 +67,7 @@ define('GOOGLE_REDIRECT_URI',  envValue('GOOGLE_REDIRECT_URI', 'http://localhost
 define('APP_NAME',    'PregnaTrack');
 define('APP_VERSION', '1.0.0');
 define('BASE_URL',    rtrim(envValue('APP_URL', 'http://localhost/Pregnancy'), '/'));
+define('USERS_FILE_PATH', envValue('USERS_FILE_PATH', __DIR__ . '/storage/users.json'));
 
 // Session lifetime in seconds (1 hour)
 define('SESSION_LIFETIME', 3600);
