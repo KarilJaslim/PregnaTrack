@@ -37,6 +37,8 @@ $prefWeight = $savedSettings['weight_unit'] ?? ($user['profile']['weight_unit'] 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings &mdash; <?= APP_NAME ?></title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
+    <link rel="apple-touch-icon" href="assets/img/logo.png">
     <script>(function(){var s=localStorage.getItem('pregnatrack_theme');var p=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;if(s?s==='dark':p)document.documentElement.setAttribute('data-theme','dark');})()</script>
     <link rel="stylesheet" href="assets/css/style.css?v=4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
