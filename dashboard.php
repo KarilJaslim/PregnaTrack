@@ -18,51 +18,47 @@ $initials  = strtoupper(substr($firstName, 0, 1));
 
 require_once 'auth/signup_common.php';
 $userId = (string)($user['id'] ?? '');
-$profileHistory = [];
 $assessmentHistory = [];
 $currentProfile = $user['profile'] ?? null;
 foreach (loadUsers() as $u) {
     if (($u['id'] ?? '') === $userId) {
-        $profileHistory = array_reverse($u['profile_history'] ?? []);
         $assessmentHistory = array_reverse($u['assessment_history'] ?? []);
         if ($currentProfile === null) $currentProfile = $u['profile'] ?? null;
         break;
     }
 }
 
-function buildEntry(array $p, bool $current = false): array {
-    $h  = (float)($p['height'] ?? 0);
-    $w  = (float)($p['weight'] ?? 0);
-    $hu = $p['height_unit'] ?? 'cm';
-    $wu = $p['weight_unit'] ?? 'kg';
-    $hm = ($hu === 'ft') ? $h * 0.3048 : $h / 100;
-    $wk = ($wu === 'lbs') ? $w * 0.453592 : $w;
-    $bmi = ($hm > 0) ? round($wk / ($hm * $hm), 1) : null;
-    $bmiLabel = '—'; $bmiColor = '#9ca3af';
-    if ($bmi !== null) {
-        if      ($bmi < 18.5) { $bmiLabel = 'Underweight'; $bmiColor = '#3b82f6'; }
-        elseif  ($bmi < 25.0) { $bmiLabel = 'Normal';      $bmiColor = '#22c55e'; }
-        elseif  ($bmi < 30.0) { $bmiLabel = 'Overweight';  $bmiColor = '#f59e0b'; }
-        else                  { $bmiLabel = 'Obese';        $bmiColor = '#ef4444'; }
-    }
-    $ts   = strtotime($p['updated_at'] ?? '') ?: 0;
-    $date = $ts ? date('j M Y', $ts) : '—';
-    $time = $ts ? date('g:i A', $ts) : '';
-    return compact('p','h','w','hu','wu','bmi','bmiLabel','bmiColor','date','time','current');
-}
-
-$entries = [];
-if ($currentProfile) $entries[] = buildEntry($currentProfile, true);
-foreach ($profileHistory as $snap) $entries[] = buildEntry($snap, false);
-
 // Stat cards from current profile
 $bmi = null; $bmiLabel = '—'; $bmiColor = '#9ca3af';
 $heightDisplay = '—'; $weightDisplay = '—';
-if (!empty($entries)) {
-    $e0 = $entries[0];
-    $bmi = $e0['bmi']; $bmiLabel = $e0['bmiLabel']; $bmiColor = $e0['bmiColor'];
-    $heightDisplay = $e0['h'] . ' ' . $e0['hu'];
-    $weightDisplay = $e0['w'] . ' ' . $e0['wu'];
+if ($currentProfile) {
+    $heightValue = (float)($currentProfile['height'] ?? 0);
+    $weightValue = (float)($currentProfile['weight'] ?? 0);
+    $heightUnit = (string)($currentProfile['height_unit'] ?? 'cm');
+    $weightUnit = (string)($currentProfile['weight_unit'] ?? 'kg');
+
+    $heightDisplay = $heightValue . ' ' . $heightUnit;
+    $weightDisplay = $weightValue . ' ' . $weightUnit;
+
+    $heightMeters = $heightUnit === 'ft' ? $heightValue * 0.3048 : $heightValue / 100;
+    $weightKg = $weightUnit === 'lbs' ? $weightValue * 0.453592 : $weightValue;
+    $bmi = ($heightMeters > 0) ? round($weightKg / ($heightMeters * $heightMeters), 1) : null;
+
+    if ($bmi !== null) {
+        if ($bmi < 18.5) {
+            $bmiLabel = 'Underweight';
+            $bmiColor = '#3b82f6';
+        } elseif ($bmi < 25.0) {
+            $bmiLabel = 'Normal';
+            $bmiColor = '#22c55e';
+        } elseif ($bmi < 30.0) {
+            $bmiLabel = 'Overweight';
+            $bmiColor = '#f59e0b';
+        } else {
+            $bmiLabel = 'Obese';
+            $bmiColor = '#ef4444';
+        }
+    }
 }
 
 $hour = (int) date('G');
@@ -139,10 +135,6 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                     <a href="hospitals.php" class="dropdown-item" role="menuitem">
                         <i class="fas fa-hospital" aria-hidden="true"></i>
                         Hospital Finder
-                    </a>
-                    <a href="#history" class="dropdown-item" role="menuitem">
-                        <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-                        History
                     </a>
                     <a href="#assessment-history" class="dropdown-item" role="menuitem">
                         <i class="fas fa-notes-medical" aria-hidden="true"></i>
@@ -228,146 +220,6 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                 </div>
             </div>
             <?php endif; ?>
-
-            <!-- ── Profile History timeline ────────────────────────── -->
-            <section class="hist-section" id="history">
-                <div class="hist-section-hdr">
-                    <div>
-                        <h2 class="hist-section-title">
-                            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Profile History
-                        </h2>
-                        <p class="hist-section-sub">Click any entry to expand full details.</p>
-                    </div>
-                    <?php if (!empty($entries)): ?>
-                    <a href="auth/download_history.php" class="btn-dl-all" download>
-                        <i class="fas fa-file-arrow-down" aria-hidden="true"></i> Download All
-                    </a>
-                    <?php endif; ?>
-                </div>
-
-                <?php if (empty($entries)): ?>
-                <div class="dash-no-profile">
-                    <div class="no-profile-icon"><i class="fas fa-file-medical" aria-hidden="true"></i></div>
-                    <h2>No Data Yet</h2>
-                    <p>Complete your intake profile and your records will appear here.</p>
-                    <a href="index.php#intake" class="btn-complete-profile">
-                        <i class="fas fa-arrow-right" aria-hidden="true"></i> Complete Intake Form
-                    </a>
-                </div>
-                <?php else: ?>
-                <div class="hist-timeline">
-                    <?php foreach ($entries as $i => $e): ?>
-                    <?php $p = $e['p']; ?>
-                    <div class="hist-entry <?= $i === 0 ? 'hist-entry-current' : '' ?>">
-                        <div class="hist-dot-col">
-                            <div class="hist-dot <?= $i === 0 ? 'hist-dot-current' : '' ?>">
-                                <i class="fas <?= $i === 0 ? 'fa-circle-dot' : 'fa-circle' ?>" aria-hidden="true"></i>
-                            </div>
-                            <?php if ($i < count($entries) - 1): ?>
-                                <div class="hist-line"></div>
-                            <?php endif; ?>
-                        </div>
-                        <article class="hist-card <?= $i === 0 ? 'is-open' : '' ?>">
-                            <button class="hist-card-toggle" type="button"
-                                    aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>">
-                                <div class="hist-toggle-left">
-                                    <span class="hist-date"><?= htmlspecialchars($e['date'], ENT_QUOTES, 'UTF-8') ?></span>
-                                    <?php if ($e['time']): ?>
-                                        <span class="hist-time"><?= htmlspecialchars($e['time'], ENT_QUOTES, 'UTF-8') ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="hist-toggle-center">
-                                    <?php if (!empty($p['name'])): ?>
-                                        <span class="hist-peek-name"><?= htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8') ?></span>
-                                        <span class="hist-peek-sep" aria-hidden="true">·</span>
-                                    <?php endif; ?>
-                                    <?php if ($e['bmi'] !== null): ?>
-                                        <span class="hist-peek-bmi" style="color:<?= htmlspecialchars($e['bmiColor'], ENT_QUOTES, 'UTF-8') ?>">
-                                            BMI <?= $e['bmi'] ?>
-                                            <span class="hist-peek-bmi-label"><?= htmlspecialchars($e['bmiLabel'], ENT_QUOTES, 'UTF-8') ?></span>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="hist-toggle-right">
-                                    <?php if ($i === 0): ?>
-                                        <span class="hist-current-badge">
-                                            <i class="fas fa-check-circle" aria-hidden="true"></i> Current
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="hist-snapshot-badge">Snapshot</span>
-                                    <?php endif; ?>
-                                    <i class="fas fa-chevron-down hist-chevron" aria-hidden="true"></i>
-                                </div>
-                            </button>
-                            <div class="hist-card-body">
-                                <div class="hist-stats-row">
-                                    <div class="hist-stat">
-                                        <i class="fas fa-id-badge" aria-hidden="true"></i>
-                                        <div>
-                                            <div class="hist-stat-val"><?= htmlspecialchars($p['name'] ?: '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                            <div class="hist-stat-lbl">Name</div>
-                                        </div>
-                                    </div>
-                                    <div class="hist-stat">
-                                        <i class="fas fa-user-clock" aria-hidden="true"></i>
-                                        <div>
-                                            <div class="hist-stat-val"><?= (int)($p['age'] ?? 0) ?> yrs</div>
-                                            <div class="hist-stat-lbl">Age</div>
-                                        </div>
-                                    </div>
-                                    <div class="hist-stat">
-                                        <i class="fas fa-ruler" aria-hidden="true"></i>
-                                        <div>
-                                            <div class="hist-stat-val"><?= htmlspecialchars($e['h'] . ' ' . $e['hu'], ENT_QUOTES, 'UTF-8') ?></div>
-                                            <div class="hist-stat-lbl">Height</div>
-                                        </div>
-                                    </div>
-                                    <div class="hist-stat">
-                                        <i class="fas fa-weight-scale" aria-hidden="true"></i>
-                                        <div>
-                                            <div class="hist-stat-val"><?= htmlspecialchars($e['w'] . ' ' . $e['wu'], ENT_QUOTES, 'UTF-8') ?></div>
-                                            <div class="hist-stat-lbl">Weight</div>
-                                        </div>
-                                    </div>
-                                    <div class="hist-stat">
-                                        <i class="fas fa-scale-balanced" style="color:<?= htmlspecialchars($e['bmiColor'], ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></i>
-                                        <div>
-                                            <div class="hist-stat-val" style="color:<?= htmlspecialchars($e['bmiColor'], ENT_QUOTES, 'UTF-8') ?>"><?= $e['bmi'] ?? '—' ?></div>
-                                            <div class="hist-stat-lbl"><?= htmlspecialchars($e['bmiLabel'], ENT_QUOTES, 'UTF-8') ?> BMI</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <?php if (($p['first_pregnancy'] ?? '') === 'yes'): ?>
-                                    <div class="hist-preg-row">
-                                        <span class="preg-first-badge" style="font-size:.78rem;padding:.3rem .75rem;">
-                                            <i class="fas fa-star" aria-hidden="true"></i> First Pregnancy
-                                        </span>
-                                    </div>
-                                <?php elseif (isset($p['gtpal_g'])): ?>
-                                    <div class="hist-gtpal-row">
-                                        <?php foreach (['G'=>'gtpal_g','T'=>'gtpal_t','P'=>'gtpal_p','A'=>'gtpal_a','L'=>'gtpal_l'] as $letter => $key): ?>
-                                        <div class="hist-gtpal-cell">
-                                            <div class="hist-gtpal-num"><?= (int)($p[$key] ?? 0) ?></div>
-                                            <div class="hist-gtpal-key"><?= $letter ?></div>
-                                        </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-
-                                <div class="hist-actions">
-                                    <a href="auth/download_history.php?entry=<?= $i ?>" class="btn-dl-entry" download>
-                                        <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
-                                        Download this record
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            </section>
 
             <section class="hist-section" id="assessment-history">
                 <div class="hist-section-hdr">
@@ -608,7 +460,7 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
         });
 
         // Smooth-scroll for in-page anchors in dropdown
-        document.querySelectorAll('a[href="#history"], a[href="#assessment-history"]').forEach(function (a) {
+        document.querySelectorAll('a[href="#assessment-history"]').forEach(function (a) {
             a.addEventListener('click', function (e) {
                 var targetId = this.getAttribute('href').replace('#', '');
                 var target = document.getElementById(targetId);
