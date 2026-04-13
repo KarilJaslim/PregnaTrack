@@ -171,16 +171,6 @@ $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good
                     <h1 class="dash-greeting"><?= $greeting ?>, <?= $firstName ?>! 🌸</h1>
                     <p class="dash-sub">Here's your pregnancy health overview.</p>
                 </div>
-                <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">
-                    <a href="diagnose.php" class="btn-edit-profile" style="background:linear-gradient(135deg,#7c3aed,#0284c7)">
-                        <i class="fas fa-stethoscope" aria-hidden="true"></i>
-                        Self-Diagnose
-                    </a>
-                    <a href="index.php#intake" class="btn-edit-profile">
-                        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                        <?= $currentProfile ? 'Update Profile' : 'Complete Profile' ?>
-                    </a>
-                </div>
             </div>
 
             <?php if ($currentProfile): ?>
