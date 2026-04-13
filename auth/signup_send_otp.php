@@ -21,9 +21,15 @@ register_shutdown_function(static function (): void {
         header('Content-Type: application/json; charset=UTF-8');
     }
 
+    $detail = function_exists('getSmtpLastError') ? trim((string) getSmtpLastError()) : '';
+    $message = 'Server error while sending OTP. Please try again.';
+    if ($detail !== '' && strtolower($detail) !== 'unknown smtp error') {
+        $message .= ' ' . $detail;
+    }
+
     echo json_encode([
         'ok' => false,
-        'message' => 'Server error while sending OTP. Please try again.',
+        'message' => $message,
     ]);
 });
 
@@ -69,5 +75,15 @@ $_SESSION['signup_otp'] = [
 
 jsonResponse(['ok' => true, 'message' => 'OTP sent to ' . $email . '.']);
 } catch (Throwable $e) {
-    jsonResponse(['ok' => false, 'message' => 'Server error while sending OTP.'], 500);
+    $detail = trim((string) getSmtpLastError());
+    if ($detail === '' || strtolower($detail) === 'unknown smtp error') {
+        $detail = trim((string) $e->getMessage());
+    }
+
+    $message = 'Server error while sending OTP.';
+    if ($detail !== '') {
+        $message .= ' ' . $detail;
+    }
+
+    jsonResponse(['ok' => false, 'message' => $message], 500);
 }
