@@ -4011,8 +4011,8 @@ a {
 
 /* Brand badge */
 .login-brand-badge {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     background: linear-gradient(135deg, #ec4899, #a855f7);
     display: flex;
@@ -4023,10 +4023,10 @@ a {
 }
 
 .login-brand-heart {
-    width: 30px;
-    height: 30px;
+    width: 38px;
+    height: 38px;
     display: block;
-    background: url('../img/pregna-logo.png') center/contain no-repeat;
+    background: url('../img/pregna-icon.png') center/contain no-repeat;
     color: transparent;
     font-size: 0;
     line-height: 0;

@@ -109,6 +109,11 @@ function sendSignupOtpEmail(string $toEmail, string $otp): bool
         return false;
     }
 
+    if (SMTP_USERNAME === '' || SMTP_PASSWORD === '' || SMTP_FROM_EMAIL === '') {
+        setSmtpLastError('SMTP credentials are incomplete. Set SMTP_USERNAME, SMTP_PASSWORD, and SMTP_FROM_EMAIL.');
+        return false;
+    }
+
     $subject = APP_NAME . ' Sign Up Verification Code';
     $message = "Hello,\n\nUse this OTP to verify your email for sign up: " . $otp . "\n\n" .
                "This code expires in " . (int) (SIGNUP_OTP_EXPIRY / 60) . " minutes.\n\n" .
@@ -131,21 +136,59 @@ function sendSignupOtpEmail(string $toEmail, string $otp): bool
 
 function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool
 {
-    $transport = SMTP_SECURE === 'ssl' ? 'ssl://' : '';
+    $attempts = [[
+        'host' => SMTP_HOST,
+        'port' => SMTP_PORT,
+        'secure' => SMTP_SECURE,
+    ]];
+
+    if (strtolower(SMTP_HOST) === 'smtp.gmail.com') {
+        if (!(SMTP_PORT === 465 && SMTP_SECURE === 'ssl')) {
+            $attempts[] = ['host' => 'smtp.gmail.com', 'port' => 465, 'secure' => 'ssl'];
+        }
+        if (!(SMTP_PORT === 587 && SMTP_SECURE === 'tls')) {
+            $attempts[] = ['host' => 'smtp.gmail.com', 'port' => 587, 'secure' => 'tls'];
+        }
+    }
+
+    $attemptErrors = [];
+    foreach ($attempts as $attempt) {
+        if (smtpSendMailAttempt(
+            $fromEmail,
+            $toEmail,
+            $payload,
+            (string) $attempt['host'],
+            (int) $attempt['port'],
+            (string) $attempt['secure']
+        )) {
+            return true;
+        }
+
+        $attemptErrors[] = (string) $attempt['host'] . ':' . (int) $attempt['port'] . ' [' . (string) $attempt['secure'] . '] ' . getSmtpLastError();
+    }
+
+    setSmtpLastError('SMTP connection failed on all attempts. ' . implode(' | ', array_unique($attemptErrors)));
+    return false;
+}
+
+function smtpSendMailAttempt(string $fromEmail, string $toEmail, string $payload, string $host, int $port, string $secure): bool
+{
+    $transport = $secure === 'ssl' ? 'ssl://' : '';
     $socket = @stream_socket_client(
-        $transport . SMTP_HOST . ':' . SMTP_PORT,
+        $transport . $host . ':' . $port,
         $errno,
         $errstr,
-        20,
+        SMTP_TIMEOUT,
         STREAM_CLIENT_CONNECT
     );
 
     if (!$socket) {
-        setSmtpLastError('Connection failed: ' . $errstr . ' (' . $errno . ')');
+        setSmtpLastError('Connection failed to ' . $host . ':' . $port . ' - ' . $errstr . ' (' . $errno . ')');
         return false;
     }
 
-    stream_set_timeout($socket, 20);
+    stream_set_timeout($socket, SMTP_TIMEOUT);
+    $ehloHost = smtpEhloHost();
 
     if (!smtpExpect($socket, [220])) {
         setSmtpLastError('SMTP server did not return 220 on connect.');
@@ -153,13 +196,13 @@ function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool
         return false;
     }
 
-    if (!smtpCommand($socket, 'EHLO localhost', [250])) {
+    if (!smtpCommand($socket, 'EHLO ' . $ehloHost, [250])) {
         setSmtpLastError('EHLO command failed.');
         fclose($socket);
         return false;
     }
 
-    if (SMTP_SECURE === 'tls') {
+    if ($secure === 'tls') {
         if (!smtpCommand($socket, 'STARTTLS', [220])) {
             setSmtpLastError('STARTTLS command failed.');
             fclose($socket);
@@ -172,7 +215,7 @@ function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool
             return false;
         }
 
-        if (!smtpCommand($socket, 'EHLO localhost', [250])) {
+        if (!smtpCommand($socket, 'EHLO ' . $ehloHost, [250])) {
             setSmtpLastError('EHLO after STARTTLS failed.');
             fclose($socket);
             return false;
@@ -225,6 +268,17 @@ function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool
     smtpCommand($socket, 'QUIT', [221]);
     fclose($socket);
     return true;
+}
+
+function smtpEhloHost(): string
+{
+    $host = parse_url(BASE_URL, PHP_URL_HOST);
+    if (!is_string($host) || $host === '') {
+        return 'localhost';
+    }
+
+    $clean = preg_replace('/[^A-Za-z0-9.-]/', '', $host);
+    return $clean !== '' ? $clean : 'localhost';
 }
 
 function smtpCommand($socket, string $command, array $expectedCodes): bool

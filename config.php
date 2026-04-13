@@ -48,6 +48,12 @@ function envValue(string $key, string $default = ''): string
     return $default;
 }
 
+function envBool(string $key, bool $default = false): bool
+{
+    $raw = strtolower(trim(envValue($key, $default ? '1' : '0')));
+    return in_array($raw, ['1', 'true', 'yes', 'on'], true);
+}
+
 // ============================================================
 //  STEP 1 — Set credentials in .env (see .env.example)
 // ============================================================
@@ -68,14 +74,16 @@ define('SESSION_LIFETIME', 3600);
 // ============================================================
 //  SMTP settings for Sign Up OTP email (Gmail)
 // ============================================================
-define('SMTP_ENABLED', true);
-define('SMTP_HOST', 'smtp.gmail.com');
-define('SMTP_PORT', 587);
-define('SMTP_SECURE', 'tls'); // tls or ssl
+define('SMTP_ENABLED', envBool('SMTP_ENABLED', true));
+define('SMTP_HOST', envValue('SMTP_HOST', 'smtp.gmail.com'));
+define('SMTP_PORT', max(1, (int) envValue('SMTP_PORT', '587')));
+$smtpSecure = strtolower(envValue('SMTP_SECURE', 'tls'));
+define('SMTP_SECURE', in_array($smtpSecure, ['tls', 'ssl'], true) ? $smtpSecure : 'tls'); // tls or ssl
+define('SMTP_TIMEOUT', max(5, (int) envValue('SMTP_TIMEOUT', '20')));
 define('SMTP_USERNAME',   envValue('SMTP_USERNAME'));
 define('SMTP_PASSWORD',   envValue('SMTP_PASSWORD'));
 define('SMTP_FROM_EMAIL', envValue('SMTP_FROM_EMAIL'));
-define('SMTP_FROM_NAME', APP_NAME . ' OTP');
+define('SMTP_FROM_NAME', envValue('SMTP_FROM_NAME', APP_NAME . ' OTP'));
 
 // ============================================================
 //  Google OAuth endpoints (do not change)
