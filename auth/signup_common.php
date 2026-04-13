@@ -257,12 +257,15 @@ function smtpSendMail(string $fromEmail, string $toEmail, string $payload): bool
 
 function smtpSendMailAttempt(string $fromEmail, string $toEmail, string $payload, string $host, int $port, string $secure): bool
 {
+    $timeout = smtpOperationTimeout();
+    @ini_set('default_socket_timeout', (string) $timeout);
+
     $transport = $secure === 'ssl' ? 'ssl://' : '';
     $socket = @stream_socket_client(
         $transport . $host . ':' . $port,
         $errno,
         $errstr,
-        SMTP_TIMEOUT,
+        $timeout,
         STREAM_CLIENT_CONNECT
     );
 
@@ -271,7 +274,7 @@ function smtpSendMailAttempt(string $fromEmail, string $toEmail, string $payload
         return false;
     }
 
-    stream_set_timeout($socket, SMTP_TIMEOUT);
+    stream_set_timeout($socket, $timeout);
     $ehloHost = smtpEhloHost();
 
     if (!smtpExpect($socket, [220])) {
@@ -387,6 +390,12 @@ function smtpExpect($socket, array $expectedCodes): bool
 
     $code = (int) substr($response, 0, 3);
     return in_array($code, $expectedCodes, true);
+}
+
+function smtpOperationTimeout(): int
+{
+    // Keep each SMTP network attempt short so OTP endpoint never hits PHP max_execution_time.
+    return max(3, min((int) SMTP_TIMEOUT, 8));
 }
 
 function jsonResponse(array $payload, int $statusCode = 200): void

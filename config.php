@@ -79,7 +79,7 @@ define('SMTP_HOST', envValue('SMTP_HOST', 'smtp.gmail.com'));
 define('SMTP_PORT', max(1, (int) envValue('SMTP_PORT', '587')));
 $smtpSecure = strtolower(envValue('SMTP_SECURE', 'tls'));
 define('SMTP_SECURE', in_array($smtpSecure, ['tls', 'ssl'], true) ? $smtpSecure : 'tls'); // tls or ssl
-define('SMTP_TIMEOUT', max(5, (int) envValue('SMTP_TIMEOUT', '20')));
+define('SMTP_TIMEOUT', max(3, (int) envValue('SMTP_TIMEOUT', '8')));
 define('SMTP_USERNAME',   envValue('SMTP_USERNAME'));
 define('SMTP_PASSWORD',   envValue('SMTP_PASSWORD'));
 define('SMTP_FROM_EMAIL', envValue('SMTP_FROM_EMAIL'));
