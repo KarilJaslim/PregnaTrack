@@ -900,7 +900,7 @@ a {
 .home-brand {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0;
     font-family: 'Playfair Display', serif;
     font-size: 1.3rem;
     font-weight: 700;
@@ -911,14 +911,19 @@ a {
 .home-brand:hover { opacity: 0.82; }
 
 .brand-heart {
-    width: 1.2rem;
-    height: 1.2rem;
+    width: 168px;
+    height: 40px;
     display: inline-block;
     flex-shrink: 0;
-    background: url('../img/logo.png') center/contain no-repeat;
+    background: url('../img/pregna.png') left center/contain no-repeat;
     color: transparent;
     font-size: 0;
     line-height: 0;
+}
+
+.home-brand > span:not(.brand-heart),
+.footer-brand > span:not(.brand-heart) {
+    display: none;
 }
 
 .home-nav {
@@ -1917,6 +1922,7 @@ a {
 
 @media (max-width: 640px) {
     .home-header  { padding: 0.8rem 1rem; }
+    .brand-heart { width: 144px; height: 34px; }
     .home-nav .btn-nav-primary,
     .home-nav .btn-nav-outline { font-size: 0.78rem; padding: 0.38rem 0.8rem; }
     .hero-title   { font-size: 1.75rem; }
@@ -1970,7 +1976,7 @@ a {
 
 /* ── Very small screens ( ≤ 380px ) ─────────────────────────── */
 @media (max-width: 380px) {
-    .home-brand span:not(.brand-heart) { font-size: 1.05rem; }
+    .brand-heart { width: 134px; height: 32px; }
     .dash-stats-grid { grid-template-columns: 1fr 1fr; }
     .dash-page       { padding: 1.5rem 0.85rem 3rem; }
 }
@@ -2011,7 +2017,6 @@ a {
     box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
 [data-theme="dark"] .home-brand { color: var(--dm-pink); }
-[data-theme="dark"] .brand-heart { color: var(--dm-pink); }
 [data-theme="dark"] .btn-nav-outline {
     border-color: var(--dm-border);
     color: var(--dm-pink);
@@ -4016,7 +4021,7 @@ a {
     width: 30px;
     height: 30px;
     display: block;
-    background: url('../img/logo.png') center/contain no-repeat;
+    background: url('../img/pregna-logo.png') center/contain no-repeat;
     color: transparent;
     font-size: 0;
     line-height: 0;
