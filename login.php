@@ -52,42 +52,9 @@ if (isset($_SESSION['user'])) {
             <h1 class="login-heading">Welcome to <?= APP_NAME ?></h1>
             <p class="login-subhead">Your pregnancy care companion</p>
 
-            <div id="authStatus" class="login-status" aria-live="polite" hidden></div>
-
             <!-- Sign In -->
             <div id="signinPanel" class="login-panel active" role="tabpanel">
-                <form id="signinForm" autocomplete="on" novalidate>
-
-                    <div class="login-field">
-                        <label for="signinEmail">
-                            <i class="fas fa-envelope" aria-hidden="true"></i> Email Address
-                        </label>
-                        <div class="login-input-wrap">
-                            <input id="signinEmail" type="email" name="email"
-                                   placeholder="name@email.com" required autocomplete="email">
-                        </div>
-                    </div>
-
-                    <div class="login-field">
-                        <label for="signinPassword">
-                            <i class="fas fa-lock" aria-hidden="true"></i> Password
-                        </label>
-                        <div class="login-input-wrap login-pw-wrap">
-                            <input id="signinPassword" type="password" name="password"
-                                   placeholder="Enter your password" required autocomplete="current-password">
-                            <button type="button" class="login-eye" data-input="signinPassword" aria-label="Show/hide password">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="login-btn-primary" id="signinSubmit">
-                        <span class="btn-text"><i class="fas fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign In</span>
-                        <span class="btn-loader" hidden><i class="fas fa-spinner fa-spin"></i></span>
-                    </button>
-                </form>
-
-                <div class="login-divider"><span>or continue with</span></div>
+                <div class="login-divider"><span>continue with</span></div>
 
                 <a href="auth/google.php" class="login-btn-google" role="button">
                     <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -99,7 +66,7 @@ if (isset($_SESSION['user'])) {
                     Continue with Google
                 </a>
 
-                <p class="login-helper">Use your account password, or continue with Google.</p>
+                <p class="login-helper">Use your Google account to sign in.</p>
             </div>
 
         </div>
@@ -129,52 +96,6 @@ if (isset($_SESSION['user'])) {
         var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         applyTheme(saved ? saved === 'dark' : prefersDark);
         document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-
-        var statusEl = document.getElementById('authStatus');
-
-        function setStatus(type, message) {
-            if (!message) { statusEl.hidden = true; return; }
-            statusEl.hidden = false;
-            statusEl.className = 'login-status ' + type;
-            statusEl.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + message;
-        }
-
-        // Password toggle
-        document.querySelectorAll('.login-eye').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var input = document.getElementById(this.dataset.input);
-                var show = input.type === 'password';
-                input.type = show ? 'text' : 'password';
-                this.querySelector('i').className = 'fas fa-eye' + (show ? '-slash' : '');
-            });
-        });
-
-        // Helpers
-        function formData(obj) {
-            var d = new URLSearchParams();
-            Object.keys(obj).forEach(function (k) { d.append(k, obj[k]); });
-            return d;
-        }
-        function setBtnLoading(btn, on) {
-            btn.disabled = on;
-            btn.querySelector('.btn-text').hidden = on;
-            btn.querySelector('.btn-loader').hidden = !on;
-        }
-
-
-        // Sign in
-        document.getElementById('signinForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            var btn = document.getElementById('signinSubmit');
-            setBtnLoading(btn, true);
-            try {
-                var r = await fetch('auth/signin_local.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: formData({ email: document.getElementById('signinEmail').value.trim(), password: document.getElementById('signinPassword').value }) });
-                var d = await r.json();
-                setStatus(d.ok ? 'success' : 'error', d.message || 'Could not sign in.');
-                if (d.ok && d.redirect) setTimeout(function () { window.location.href = d.redirect; }, 600);
-                else setBtnLoading(btn, false);
-            } catch(e) { setStatus('error','Network error while signing in.'); setBtnLoading(btn, false); }
-        });
 
     })();
     </script>
