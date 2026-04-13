@@ -911,14 +911,19 @@ a {
 .home-brand:hover { opacity: 0.82; }
 
 .brand-heart {
-    width: 168px;
-    height: 40px;
+    width: 220px;
+    height: 52px;
     display: inline-block;
     flex-shrink: 0;
     background: url('../img/pregna.png') left center/contain no-repeat;
     color: transparent;
     font-size: 0;
     line-height: 0;
+}
+
+.footer-brand .brand-heart {
+    width: 170px;
+    height: 40px;
 }
 
 .home-brand > span:not(.brand-heart),
@@ -1922,7 +1927,7 @@ a {
 
 @media (max-width: 640px) {
     .home-header  { padding: 0.8rem 1rem; }
-    .brand-heart { width: 144px; height: 34px; }
+    .home-brand .brand-heart { width: 184px; height: 44px; }
     .home-nav .btn-nav-primary,
     .home-nav .btn-nav-outline { font-size: 0.78rem; padding: 0.38rem 0.8rem; }
     .hero-title   { font-size: 1.75rem; }
@@ -1976,7 +1981,7 @@ a {
 
 /* ── Very small screens ( ≤ 380px ) ─────────────────────────── */
 @media (max-width: 380px) {
-    .brand-heart { width: 134px; height: 32px; }
+    .home-brand .brand-heart { width: 154px; height: 36px; }
     .dash-stats-grid { grid-template-columns: 1fr 1fr; }
     .dash-page       { padding: 1.5rem 0.85rem 3rem; }
 }
