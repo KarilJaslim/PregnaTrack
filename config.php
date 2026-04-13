@@ -30,19 +30,37 @@
     }
 })();
 
+function envValue(string $key, string $default = ''): string
+{
+    if (array_key_exists($key, $_ENV) && $_ENV[$key] !== '') {
+        return (string) $_ENV[$key];
+    }
+
+    if (array_key_exists($key, $_SERVER) && $_SERVER[$key] !== '') {
+        return (string) $_SERVER[$key];
+    }
+
+    $value = getenv($key);
+    if ($value !== false && $value !== '') {
+        return (string) $value;
+    }
+
+    return $default;
+}
+
 // ============================================================
 //  STEP 1 — Set credentials in .env (see .env.example)
 // ============================================================
-define('GOOGLE_CLIENT_ID',     (string) ($_ENV['GOOGLE_CLIENT_ID']     ?? ''));
-define('GOOGLE_CLIENT_SECRET', (string) ($_ENV['GOOGLE_CLIENT_SECRET'] ?? ''));
-define('GOOGLE_REDIRECT_URI',  (string) ($_ENV['GOOGLE_REDIRECT_URI']  ?? 'http://localhost/Pregnancy/auth/callback.php'));
+define('GOOGLE_CLIENT_ID',     envValue('GOOGLE_CLIENT_ID'));
+define('GOOGLE_CLIENT_SECRET', envValue('GOOGLE_CLIENT_SECRET'));
+define('GOOGLE_REDIRECT_URI',  envValue('GOOGLE_REDIRECT_URI', 'http://localhost/Pregnancy/auth/callback.php'));
 
 // ============================================================
 //  App settings
 // ============================================================
 define('APP_NAME',    'PregnaTrack');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL',    rtrim((string) ($_ENV['APP_URL'] ?? 'http://localhost/Pregnancy'), '/'));
+define('BASE_URL',    rtrim(envValue('APP_URL', 'http://localhost/Pregnancy'), '/'));
 
 // Session lifetime in seconds (1 hour)
 define('SESSION_LIFETIME', 3600);
@@ -54,9 +72,9 @@ define('SMTP_ENABLED', true);
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
 define('SMTP_SECURE', 'tls'); // tls or ssl
-define('SMTP_USERNAME',   (string) ($_ENV['SMTP_USERNAME']   ?? ''));
-define('SMTP_PASSWORD',   (string) ($_ENV['SMTP_PASSWORD']   ?? ''));
-define('SMTP_FROM_EMAIL', (string) ($_ENV['SMTP_FROM_EMAIL'] ?? ''));
+define('SMTP_USERNAME',   envValue('SMTP_USERNAME'));
+define('SMTP_PASSWORD',   envValue('SMTP_PASSWORD'));
+define('SMTP_FROM_EMAIL', envValue('SMTP_FROM_EMAIL'));
 define('SMTP_FROM_NAME', APP_NAME . ' OTP');
 
 // ============================================================
