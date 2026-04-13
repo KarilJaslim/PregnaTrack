@@ -24,6 +24,13 @@ if ($remaining > 0 && strtolower((string) ($otpState['email'] ?? '')) === strtol
 }
 
 $otp = generateNumericOtp();
+if (!sendSignupOtpEmail($email, $otp)) {
+    jsonResponse([
+        'ok' => false,
+        'message' => 'SMTP send failed: ' . getSmtpLastError()
+    ], 500);
+}
+
 $_SESSION['signup_otp'] = [
     'email' => $email,
     'hash' => password_hash($otp, PASSWORD_DEFAULT),
@@ -34,10 +41,4 @@ $_SESSION['signup_otp'] = [
     'last_sent_at' => time(),
 ];
 
-if (!sendSignupOtpEmail($email, $otp)) {
-    jsonResponse([
-        'ok' => false,
-        'message' => 'SMTP send failed: ' . getSmtpLastError()
-    ], 500);
-}
 jsonResponse(['ok' => true, 'message' => 'OTP sent to ' . $email . '.']);
